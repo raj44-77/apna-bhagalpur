@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html" class="active">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+                <li><a href="my-bookings.html">📋 My Bookings</a></li>
+                <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>📅 Book Your Appointment</h1>
+            <p>Fill in the details below to book your slot at a clinic in Bhagalpur</p>
+        </div>
+    </section>
+
+    <!-- Booking Form -->
+    <section class="section">
+        <div class="container-sm">
+            <!-- Booking Form Card -->
+            <div class="card" id="bookingFormCard">
+                <div class="card-header">
+                    <h3>📝 Patient Details</h3>
+                </div>
+                <div class="card-body">
+                    <form id="bookingForm">
+                        <div class="form-group">
+                            <label class="form-label">Patient Name *</label>
+                            <input type="text" class="form-control" id="patientName" placeholder="Enter your full name" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phoneNumber" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Clinic *</label>
+                            <select class="form-control" id="clinicSelect" required>
+                                <option value="">Choose a clinic...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Doctor *</label>
+                            <select class="form-control" id="doctorSelect" required disabled>
+                                <option value="">First select a clinic</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Appointment Date *</label>
+                            <input type="date" class="form-control" id="appointmentDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Preferred Time Slot *</label>
+                            <select class="form-control" id="timeSlot" required>
+                                <option value="">Select time slot...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
+                            ✅ Confirm Booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Confirmation Card (Hidden by default) -->
+            <div class="card" id="confirmationCard" style="display: none; border-left: 4px solid var(--success);">
+                <div class="card-body">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 3rem;">✅</div>
+                        <h2 style="color: var(--success);">Booking Confirmed!</h2>
+                        <p style="color: var(--text-light);">Your appointment has been booked successfully</p>
+                    </div>
+                    <div class="divider"></div>
+                    <div id="bookingDetails" style="margin: 16px 0;"></div>
+                    <div class="divider"></div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <a href="tracking.html" class="btn btn-primary" style="flex: 1;" id="trackLink">📍 Track Your Slot</a>
+                        <button class="btn btn-outline" style="flex: 1;" onclick="bookAnother()">📅 Book Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="brand-name">🏥 Apna Bhagalpur</div>
+                <p>Bhagalpur's trusted healthcare booking platform</p>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentBooking = null;
+
+        // Populate clinics from API
+        async function populateClinics() {
+            const select = document.getElementById('clinicSelect');
+            try {
+                const clinics = await API.getClinics();
+                clinics.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`;
+                });
+            } catch (error) {
+                // Fallback to local data if API fails
+                CLINICS.forEach(c => {
+                    select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`;
+                });
+            }
+            
+            // Check URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const clinicId = urlParams.get('clinic');
+            if (clinicId) {
+                select.value = clinicId;
+                select.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // Populate time slots
+        function populateTimeSlots() {
+            const select = document.getElementById('timeSlot');
+            TIME_SLOTS.forEach(slot => {
+                select.innerHTML += `<option value="${slot}">${slot}</option>`;
+            });
+        }
+
+        // Clinic change - load doctors from API
+        document.getElementById('clinicSelect').addEventListener('change', async function() {
+            const clinicId = this.value;
+            const doctorSelect = document.getElementById('doctorSelect');
+            doctorSelect.innerHTML = '<option value="">Loading doctors...</option>';
+            
+            if (clinicId) {
+                try {
+                    const doctors = await API.getDoctors(clinicId);
+                    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+                    doctorSelect.disabled = false;
+                    doctors.forEach(d => {
+                        doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.consultation_fee})</option>`;
+                    });
+                } catch (error) {
+                    // Fallback to local data
+                    const clinic = getClinicById(clinicId);
+                    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+                    doctorSelect.disabled = false;
+                    if (clinic) {
+                        clinic.doctors.forEach(d => {
+                            doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.fee})</option>`;
+                        });
+                    }
+                }
+            } else {
+                doctorSelect.innerHTML = '<option value="">First select a clinic</option>';
+                doctorSelect.disabled = true;
+            }
+        });
+
+        // Form submission - API version
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const patientName = document.getElementById('patientName').value.trim();
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const clinicId = parseInt(document.getElementById('clinicSelect').value);
+            const doctorId = parseInt(document.getElementById('doctorSelect').value);
+            const appointmentDate = document.getElementById('appointmentDate').value;
+            const timeSlot = document.getElementById('timeSlot').value;
+
+            if (phoneNumber.length !== 10) {
+                showToast('Error', 'Please enter a valid 10-digit phone number', 'error');
+                return;
+            }
+
+            // Show loading
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner"></span> Booking...';
+
+            try {
+                const result = await API.bookAppointment({
+                    clinic_id: clinicId,
+                    doctor_id: doctorId,
+                    patient_name: patientName,
+                    patient_phone: phoneNumber,
+                    appointment_date: appointmentDate,
+                    time_slot: timeSlot
+                });
+
+                if (result.id) {
+                    currentBooking = result;
+                    showConfirmation(result);
+                    showToast('Success', `Slot #${result.slot_number} booked successfully!`, 'success');
+                } else {
+                    showToast('Error', result.detail || 'Booking failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                showToast('Error', 'Cannot connect to server. Make sure backend is running on port 8000.', 'error');
+                console.error('Booking error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '✅ Confirm Booking';
+            }
+        });
+
+        // Show confirmation
+        function showConfirmation(booking) {
+            document.getElementById('bookingFormCard').style.display = 'none';
+            document.getElementById('confirmationCard').style.display = 'block';
+
+            const details = document.getElementById('bookingDetails');
+            details.innerHTML = `
+                <p><strong>Booking ID:</strong> ${booking.booking_id}</p>
+                <p><strong>Slot Number:</strong> <span style="font-size: 1.2rem; color: var(--primary); font-weight: 700;">#${booking.slot_number}</span></p>
+                <p><strong>Patient:</strong> ${booking.patient_name}</p>
+                <p><strong>Clinic:</strong> ${booking.clinic_name}</p>
+                <p><strong>Doctor:</strong> ${booking.doctor_name}</p>
+                <p><strong>Date:</strong> ${formatDate(booking.appointment_date)}</p>
+                <p><strong>Time:</strong> ${booking.time_slot}</p>
+                <p>${getStatusBadge(booking.status)}</p>
+            `;
+
+            document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&slot=${booking.slot_number}`;
+        }
+
+        // Book another
+        function bookAnother() {
+            document.getElementById('bookingFormCard').style.display = 'block';
+            document.getElementById('confirmationCard').style.display = 'none';
+            document.getElementById('bookingForm').reset();
+            document.getElementById('doctorSelect').disabled = true;
+            document.getElementById('doctorSelect').innerHTML = '<option value="">First select a clinic</option>';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            populateClinics();
+            populateTimeSlots();
+            document.getElementById('appointmentDate').min = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

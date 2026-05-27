@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: apna-bhagalpur-api
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DB_HOST
+        value: zephyr.proxy.rlwy.net
+      - key: DB_PORT
+        value: "22481"
+      - key: DB_USER
+        value: root
+      - key: DB_PASSWORD
+        value: MPZEuwCdbNknxDetgLbaQUCWrVjgZbdn
+      - key: DB_NAME
+        value: railway

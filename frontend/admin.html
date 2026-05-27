@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+                <li><a href="my-bookings.html">📋 My Bookings</a></li>
+                <li><a href="admin.html" class="btn-nav active">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>👨‍⚕️ Admin Dashboard</h1>
+            <p>Manage clinic queues - select any date to view bookings</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-body">
+                    <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+                            <label class="form-label">Select Clinic</label>
+                            <select class="form-control" id="adminClinicSelect">
+                                <option value="">Choose a clinic...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" id="adminDate" style="width:180px;">
+                        </div>
+                        <button class="btn btn-primary" onclick="loadDashboard()" style="height:44px;">📅 Load</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboardContent" style="display:none;">
+                <div class="grid-2" style="margin-bottom:24px;">
+                    <div class="card">
+                        <div class="card-header"><h3>🔔 Currently Serving</h3></div>
+                        <div class="card-body" id="currentPatientSection">
+                            <div class="empty-state"><div class="empty-icon">🏥</div><h3>Select clinic and date</h3></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>⚡ Actions</h3></div>
+                        <div class="card-body">
+                            <button class="btn btn-primary btn-block" onclick="nextSlot()" style="margin-bottom:12px;">⏭️ Next Slot</button>
+                            <button class="btn btn-danger btn-block" onclick="showModal('absentModal')" style="margin-bottom:12px;">❌ Mark Absent</button>
+                            <button class="btn btn-success btn-block" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
+                            <button class="btn btn-warning btn-block" id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
+                            <button class="btn btn-outline btn-block" id="lockBtn" onclick="toggleLock()" style="margin-top:12px;">🔒 Lock Queue</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-header"><h3>📋 Queue</h3></div>
+                    <div class="card-body" id="adminQueueList" style="max-height:500px;overflow-y:auto;">
+                        <div class="empty-state"><p>No appointments for this date</p></div>
+                    </div>
+                </div>
+
+                <div class="grid-4" style="margin-bottom:24px;">
+                    <div class="stat-card"><div class="stat-icon" style="background:rgba(59,130,246,0.1);">📊</div><div class="stat-value" id="statProgress">0/0</div><div class="stat-label">Progress</div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,0.1);">❌</div><div class="stat-value" id="statAbsent" style="color:var(--danger);">0</div><div class="stat-label">Absent</div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.1);">🚶</div><div class="stat-value" id="statWalkins" style="color:var(--success);">0</div><div class="stat-label">Walk-ins</div></div>
+                    <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.1);">⏱️</div><div class="stat-value">15 min</div><div class="stat-label">Avg Wait</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal-overlay hidden" id="walkinModal">
+        <div class="modal">
+            <div class="modal-header"><h3>🚶 Add Walk-in</h3><button class="modal-close" onclick="hideModal('walkinModal')">×</button></div>
+            <div class="modal-body">
+                <form id="walkinForm">
+                    <div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" id="walkinName" required></div>
+                    <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="walkinPhone"></div>
+                    <div class="form-group"><label class="form-label">Doctor *</label><select class="form-control" id="walkinDoctor" required><option value="">Select...</option></select></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('walkinModal')">Cancel</button>
+                <button class="btn btn-success" onclick="addWalkIn()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="absentModal">
+        <div class="modal">
+            <div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
+            <div class="modal-body"><p>Mark current patient as absent?</p></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="markAbsent()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentClinicId = null;
+        let dashboardData = null;
+        let timerInterval = null;
+        let seconds = 0;
+        let isPaused = false;
+
+        function getSelectedDate() {
+            return document.getElementById('adminDate').value || null;
+        }
+
+        async function populateAdminClinics() {
+            const select = document.getElementById('adminClinicSelect');
+            try {
+                const clinics = await API.getClinics();
+                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            } catch(e) {
+                CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            }
+        }
+
+        document.getElementById('adminClinicSelect').addEventListener('change', async function() {
+            if (this.value) {
+                currentClinicId = parseInt(this.value);
+                document.getElementById('dashboardContent').style.display = 'block';
+                try {
+                    const doctors = await API.getDoctors(currentClinicId);
+                    const ds = document.getElementById('walkinDoctor');
+                    ds.innerHTML = '<option value="">Select...</option>';
+                    doctors.forEach(d => ds.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty}</option>`);
+                } catch(e) {}
+                seconds = 0;
+                await loadDashboard();
+            } else {
+                document.getElementById('dashboardContent').style.display = 'none';
+            }
+        });
+
+        document.getElementById('adminDate').addEventListener('change', function() {
+            if (currentClinicId) {
+                seconds = 0;
+                loadDashboard();
+            }
+        });
+
+        async function loadDashboard() {
+            if (!currentClinicId) return;
+            const dateVal = getSelectedDate();
+            try {
+                dashboardData = await API.getDashboard(currentClinicId, dateVal);
+                updateUI();
+                startTimer();
+            } catch(e) { 
+                console.error('Dashboard error:', e); 
+                showToast('Error', 'Failed to load dashboard', 'error');
+            }
+        }
+
+        function updateUI() {
+            const current = dashboardData?.current_patient;
+            const section = document.getElementById('currentPatientSection');
+            if (current && current.slot_number) {
+                section.innerHTML = `<div style="text-align:center;">
+                    <div style="font-size:3rem;font-weight:700;color:var(--primary);">#${current.slot_number}</div>
+                    <h3>${current.name}</h3>
+                    <p>${current.time_slot || ''}</p>
+                    <div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>
+                </div>`;
+            } else {
+                section.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>';
+                clearInterval(timerInterval);
+            }
+
+            const apps = dashboardData?.appointments || [];
+            const container = document.getElementById('adminQueueList');
+            if (apps.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No appointments for this date</p></div>';
+            } else {
+                container.innerHTML = apps.map(a => `
+                    <div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='current'?'background:#fefce8;':''}${a.status==='absent'?'text-decoration:line-through;opacity:0.6;':''}">
+                        <div>
+                            <strong>#${a.slot_number}</strong> - ${a.patient_name}
+                            <div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name || 'N/A'} | 🕐 ${a.time_slot}</div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div>
+                    </div>
+                `).join('');
+            }
+
+            const stats = dashboardData?.stats || {};
+            const queue = dashboardData?.queue || {};
+            document.getElementById('statProgress').textContent = `${stats.completed||0}/${stats.total||0}`;
+            document.getElementById('statAbsent').textContent = stats.absent || 0;
+            document.getElementById('statWalkins').textContent = queue.total_walkins || 0;
+
+            // Update lock button
+            const lockBtn = document.getElementById('lockBtn');
+            if (lockBtn) {
+                if (dashboardData?.is_locked) {
+                    lockBtn.textContent = '🔓 Unlock Queue';
+                    lockBtn.className = 'btn btn-success btn-block';
+                    lockBtn.style.marginTop = '12px';
+                } else {
+                    lockBtn.textContent = '🔒 Lock Queue';
+                    lockBtn.className = 'btn btn-outline btn-block';
+                    lockBtn.style.marginTop = '12px';
+                }
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            if (dashboardData?.current_patient && !isPaused) {
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const h = String(Math.floor(seconds/3600)).padStart(2,'0');
+                    const m = String(Math.floor((seconds%3600)/60)).padStart(2,'0');
+                    const s = String(seconds%60).padStart(2,'0');
+                    const el = document.getElementById('timer');
+                    if (el) el.textContent = `${h}:${m}:${s}`;
+                }, 1000);
+            }
+        }
+
+        async function nextSlot() {
+            if (!currentClinicId) return;
+            try {
+                await API.nextSlot(currentClinicId, getSelectedDate());
+                seconds = 0;
+                showToast('Success', 'Slot advanced', 'success');
+                await loadDashboard();
+            } catch(e) { showToast('Error', 'Failed', 'error'); }
+        }
+
+        async function markAbsent() {
+            if (!currentClinicId) return;
+            try {
+                await API.markAbsent(currentClinicId, getSelectedDate());
+                seconds = 0;
+                hideModal('absentModal');
+                showToast('Marked', 'Patient marked absent', 'warning');
+                await loadDashboard();
+            } catch(e) { showToast('Error', 'Failed', 'error'); }
+        }
+
+        async function addWalkIn() {
+            const name = document.getElementById('walkinName').value.trim();
+            const phone = document.getElementById('walkinPhone').value.trim();
+            const doctorId = parseInt(document.getElementById('walkinDoctor').value);
+            if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
+            try {
+                await API.addWalkin(currentClinicId, { clinic_id: currentClinicId, doctor_id: doctorId, patient_name: name, patient_phone: phone }, getSelectedDate());
+                hideModal('walkinModal');
+                document.getElementById('walkinForm').reset();
+                showToast('Added', `${name} added to queue`, 'success');
+                await loadDashboard();
+            } catch(e) { showToast('Error', 'Failed', 'error'); }
+        }
+
+        async function togglePause() {
+            try {
+                const result = await API.togglePause(currentClinicId);
+                isPaused = result.is_paused;
+                const btn = document.getElementById('pauseBtn');
+                
+                if (isPaused) {
+                    btn.textContent = '▶️ Resume';
+                    btn.className = 'btn btn-success btn-block';
+                    clearInterval(timerInterval);
+                } else {
+                    btn.textContent = '⏸️ Pause';
+                    btn.className = 'btn btn-warning btn-block';
+                    startTimer();
+                }
+            } catch(e) {}
+        }
+
+        async function toggleLock() {
+            if (!currentClinicId) return;
+            try {
+                const isLocked = dashboardData?.is_locked;
+                if (isLocked) {
+                    await API.unlockQueue(currentClinicId, getSelectedDate());
+                    showToast('Unlocked', 'Queue is now open for bookings', 'success');
+                } else {
+                    await API.lockQueue(currentClinicId, getSelectedDate());
+                    showToast('Locked', 'Bookings closed for this date', 'warning');
+                }
+                await loadDashboard();
+            } catch(e) { showToast('Error', 'Failed', 'error'); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateAdminClinics();
+            document.getElementById('adminDate').value = new Date().toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

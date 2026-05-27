@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="login.html" class="active">🔑 Login</a></li>
+                <li><a href="signup.html">📝 Sign Up</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>🔑 Login</h1>
+            <p>Access your Apna Bhagalpur account</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div class="card">
+                <div class="card-header"><h3>👤 Sign In</h3></div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="loginEmail" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="loginPassword" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">🔑 Login</button>
+                    </form>
+
+                    <div class="divider"></div>
+
+                    <div style="background: var(--secondary); padding: 16px; border-radius: var(--radius-sm); margin-top: 16px;">
+                        <h4 style="margin-bottom: 8px; font-size: 0.9rem;">🔑 Demo Credentials</h4>
+                        <div style="font-size: 0.85rem; color: var(--text-mid);">
+                            <p style="margin: 4px 0;"><strong>Patient:</strong> rahul@email.com / patient123</p>
+                            <p style="margin: 4px 0;"><strong>Clinic:</strong> cityhospital@email.com / clinic123</p>
+                        </div>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
+                        Don't have an account? 
+                        <a href="signup.html" style="color: var(--primary); font-weight: 600;">Sign Up</a> |
+                        <a href="clinic-signup.html" style="color: var(--primary); font-weight: 600;">Register Clinic</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // If already logged in, redirect to appropriate page
+        if (AuthStore.isLoggedIn()) {
+            const user = AuthStore.getCurrentUser();
+            if (user.user_type === 'clinic') {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'booking.html';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            const result = await loginUser(email, password);
+
+            if (result.success) {
+                showToast('Welcome!', 'Logged in as ' + result.user.name, 'success');
+                setTimeout(() => {
+                    if (result.user.user_type === 'clinic') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'booking.html';
+                    }
+                }, 1000);
+            } else {
+                showToast('Login Failed', result.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

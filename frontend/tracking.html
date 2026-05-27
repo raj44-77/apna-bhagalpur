@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Your Slot - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html" class="active">📍 Track Slot</a></li>
+                <li><a href="my-bookings.html">📋 My Bookings</a></li>
+                <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>📍 Live Queue Tracking</h1>
+            <p>Real-time updates via WebSocket - No refresh needed!</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div class="card" id="searchCard">
+                <div class="card-header"><h3>🔍 Find Your Slot</h3></div>
+                <div class="card-body">
+                    <form id="trackForm">
+                        <div class="form-group">
+                            <label class="form-label">Select Clinic *</label>
+                            <select class="form-control" id="clinicSelect" required>
+                                <option value="">Choose a clinic...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Your Slot Number *</label>
+                            <input type="number" class="form-control" id="slotInput" placeholder="Enter your slot number" required min="1">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">🔍 Track Now</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="trackingDisplay" style="display: none;">
+                <div class="grid-3" style="margin-bottom:24px;">
+                    <div class="stat-card" style="text-align:center;">
+                        <div class="stat-icon" style="background:rgba(59,130,246,0.1);margin:0 auto 12px;">🏃</div>
+                        <div class="stat-label">Current Serving</div>
+                        <div class="stat-value" id="currentSlot" style="color:var(--primary);">-</div>
+                    </div>
+                    <div class="stat-card" style="text-align:center;">
+                        <div class="stat-icon" style="background:rgba(16,185,129,0.1);margin:0 auto 12px;">🎯</div>
+                        <div class="stat-label">Your Slot</div>
+                        <div class="stat-value" id="yourSlot" style="color:var(--success);">-</div>
+                    </div>
+                    <div class="stat-card" style="text-align:center;">
+                        <div class="stat-icon" style="background:rgba(245,158,11,0.1);margin:0 auto 12px;">👥</div>
+                        <div class="stat-label">Queue Ahead</div>
+                        <div class="stat-value" id="queueAhead" style="color:var(--warning);">-</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-body">
+                        <h4 style="margin-bottom:12px;">Queue Progress</h4>
+                        <div class="progress-bar" style="height:24px;margin-bottom:8px;">
+                            <div class="progress-fill" id="progressFill" style="width:0%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:24px;border-left:4px solid var(--primary);">
+                    <div class="card-body">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:2rem;">⏱️</span>
+                            <div>
+                                <h4 style="margin:0;">Estimated Wait Time</h4>
+                                <p style="font-size:1.5rem;font-weight:700;color:var(--primary);margin:4px 0;" id="waitTime">--</p>
+                                <p style="font-size:0.85rem;color:var(--text-light);" id="waitDetail"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:24px;" id="statusAlert">
+                    <div class="card-body" id="statusMessage"></div>
+                </div>
+
+                <div id="wsStatus" style="text-align:center;margin-bottom:16px;font-size:0.85rem;">
+                    <span id="wsIndicator">⚪ Connecting to live updates...</span>
+                </div>
+
+                <div class="grid-2" style="margin-bottom:24px;">
+                    <button class="btn btn-success" onclick="checkIn()">✅ I've Arrived</button>
+                    <button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="cancelBooking()">❌ Cancel Booking</button>
+                </div>
+                <button class="btn btn-outline btn-block" style="margin-bottom:24px;" onclick="shareOnWhatsApp()">💬 Share on WhatsApp</button>
+
+                <div class="card">
+                    <div class="card-header"><h3>📋 Today's Queue</h3></div>
+                    <div class="card-body" id="queueList" style="max-height:400px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentTracking = null;
+        let ws = null;
+
+        function populateClinics() {
+            const select = document.getElementById('clinicSelect');
+            CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            const urlParams = new URLSearchParams(window.location.search);
+            const clinicId = urlParams.get('clinic');
+            const slotNum = urlParams.get('slot');
+            if (clinicId) document.getElementById('clinicSelect').value = clinicId;
+            if (slotNum) document.getElementById('slotInput').value = slotNum;
+            if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
+        }
+
+        function connectWebSocket(clinicId) {
+            if (ws) { ws.close(); }
+            document.getElementById('wsIndicator').innerHTML = '🟡 Connecting...';
+            ws = new WebSocket(`ws://localhost:8000/ws/${clinicId}`);
+            ws.onopen = () => { console.log('🟢 Live!'); document.getElementById('wsIndicator').innerHTML = '🟢 Live updates active'; };
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'queue_update') { updateTrackingDisplay(); showToast('🔔 Update', msg.data.message, 'info'); }
+            };
+            ws.onclose = () => { document.getElementById('wsIndicator').innerHTML = '🔴 Reconnecting...'; setTimeout(() => connectWebSocket(clinicId), 3000); };
+            ws.onerror = () => { document.getElementById('wsIndicator').innerHTML = '🔴 Connection error'; };
+        }
+
+        document.getElementById('trackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const clinicId = parseInt(document.getElementById('clinicSelect').value);
+            const slotNum = parseInt(document.getElementById('slotInput').value);
+            if (!clinicId || !slotNum) { showToast('Error', 'Select clinic and enter slot', 'error'); return; }
+            try {
+                const data = await API.trackQueue(clinicId, slotNum);
+                if (!data || data.detail) { showToast('Not Found', 'No booking found', 'error'); return; }
+                currentTracking = { clinicId, slotNum };
+                document.getElementById('searchCard').style.display = 'none';
+                document.getElementById('trackingDisplay').style.display = 'block';
+                await updateTrackingDisplay();
+                connectWebSocket(clinicId);
+            } catch (err) { showToast('Error', 'Cannot connect to server', 'error'); }
+        });
+
+        async function updateTrackingDisplay() {
+            if (!currentTracking) return;
+            try {
+                const data = await API.trackQueue(currentTracking.clinicId, currentTracking.slotNum);
+                document.getElementById('currentSlot').textContent = `#${data.current_slot}`;
+                document.getElementById('yourSlot').textContent = `#${data.your_slot}`;
+                document.getElementById('queueAhead').textContent = data.queue_ahead;
+                const progress = Math.min(100, Math.round((data.current_slot / 10) * 100));
+                const pf = document.getElementById('progressFill');
+                pf.style.width = progress + '%'; pf.textContent = progress + '%';
+                document.getElementById('waitTime').textContent = data.estimated_wait_string || '--';
+                document.getElementById('waitDetail').textContent = `${data.queue_ahead} patient(s) ahead`;
+
+                const sd = document.getElementById('statusMessage');
+                if (data.alert_type === 'success') sd.innerHTML = '<div class="badge badge-success" style="font-size:1rem;">✅ Complete</div>';
+                else if (data.alert_type === 'warning') sd.innerHTML = `<div class="badge badge-warning pulse" style="font-size:1rem;">🔔 ${data.status_message}</div>`;
+                else sd.innerHTML = `<div class="badge badge-primary" style="font-size:1rem;">⏳ ${data.status_message}</div>`;
+
+                const qd = await API.getQueueStatus(currentTracking.clinicId);
+                document.getElementById('queueList').innerHTML = (qd.appointments || []).map(a => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}${a.slot_number===data.current_slot&&a.status==='current'?'background:#fefce8;':''}">
+                        <div><strong>#${a.slot_number}</strong> - ${a.patient_name.split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
+                        <div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div>
+                    </div>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        function checkIn() { showToast('Checked In', 'Arrival confirmed', 'success'); }
+        function cancelBooking() {
+            if (!confirm('Cancel this booking?')) return;
+            document.getElementById('searchCard').style.display = 'block';
+            document.getElementById('trackingDisplay').style.display = 'none';
+            if (ws) ws.close();
+        }
+        function shareOnWhatsApp() {
+            if (!currentTracking) return;
+            const text = `Apna Bhagalpur Appointment:%0A🔢 Slot: #${currentTracking.slotNum}%0ATrack: ${window.location.origin}/tracking.html?clinic=${currentTracking.clinicId}&slot=${currentTracking.slotNum}`;
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+
+        document.addEventListener('DOMContentLoaded', populateClinics);
+    </script>
+</body>
+</html>

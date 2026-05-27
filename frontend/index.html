@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apna Bhagalpur - Doctor Appointment System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Bhagalpur</div>
+                    <div class="brand-sub">Bhagalpur KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+                <li><a href="my-bookings.html">📋 My Bookings</a></li>
+                <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="page-hero" style="padding: 80px 24px;">
+        <div class="page-hero-inner" style="text-align: center;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 16px;">🏥 Apna Bhagalpur</h1>
+            <p style="font-size: 1.3rem; margin-bottom: 8px; font-weight: 600;">Bhagalpur ka apna doctor appointment system</p>
+            <p style="font-size: 1rem; opacity: 0.9; margin-bottom: 32px;">Book doctor appointments online, track your queue in real-time, and avoid overcrowding at clinics across Bhagalpur.</p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="booking.html" class="btn btn-primary btn-lg">📅 Book Appointment</a>
+                <a href="tracking.html" class="btn btn-lg" style="background: white; color: var(--primary);">📍 Track Your Slot</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="eyebrow">WHY CHOOSE US</span>
+                <h2>Smart Healthcare for Bhagalpur</h2>
+                <p>We're making healthcare accessible for everyone in Bhagalpur with digital queue management.</p>
+            </div>
+            <div class="grid-3">
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">🏠</div>
+                        <h3 style="margin-bottom: 8px;">Book from Home</h3>
+                        <p style="color: var(--text-light);">Skip the queue. Book your appointment online in 30 seconds from anywhere in Bhagalpur.</p>
+                    </div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">📊</div>
+                        <h3 style="margin-bottom: 8px;">Live Queue Tracking</h3>
+                        <p style="color: var(--text-light);">Know exactly when your turn comes. No more waiting endlessly at clinics.</p>
+                    </div>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <div class="card-body">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">⚡</div>
+                        <h3 style="margin-bottom: 8px;">Save Hours</h3>
+                        <p style="color: var(--text-light);">Our users save 2+ hours per visit. Time is precious, spend it wisely.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Clinics Section -->
+    <section class="section" style="background: white;">
+        <div class="container">
+            <div class="section-header">
+                <span class="eyebrow">OUR NETWORK</span>
+                <h2>Partner Clinics in Bhagalpur</h2>
+                <p>Trusted healthcare providers across Bhagalpur city</p>
+            </div>
+            <div class="grid-3" id="clinicCards">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="section" style="background: var(--secondary);">
+        <div class="container">
+            <div class="grid-4">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(30,64,175,0.1);">🏥</div>
+                    <div class="stat-value">5+</div>
+                    <div class="stat-label">Partner Clinics</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16,185,129,0.1);">👨‍⚕️</div>
+                    <div class="stat-value">12+</div>
+                    <div class="stat-label">Expert Doctors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(245,158,11,0.1);">👥</div>
+                    <div class="stat-value">1000+</div>
+                    <div class="stat-label">Patients Served</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(239,68,68,0.1);">⭐</div>
+                    <div class="stat-value">98%</div>
+                    <div class="stat-label">Satisfaction Rate</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section">
+        <div class="container">
+            <div class="card" style="background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; text-align: center; padding: 48px 24px; border: none;">
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 12px; color: white;">Ready to Skip the Queue?</h2>
+                <p style="opacity: 0.9; margin-bottom: 24px; font-size: 1.1rem;">Book your appointment now and track it live. No more waiting at clinics.</p>
+                <a href="booking.html" class="btn btn-lg" style="background: white; color: var(--primary); font-size: 1.1rem;">📅 Book Appointment Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="brand-name">🏥 Apna Bhagalpur</div>
+                <p>Bhagalpur's trusted healthcare booking platform. Making healthcare accessible for everyone.</p>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
+                <p>Developed by : Kumar Raj</p>
+                <p style="opacity: 0.6;">Version 1.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Populate clinic cards
+        function renderClinics() {
+            const container = document.getElementById('clinicCards');
+            CLINICS.forEach(clinic => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div style="font-size: 2.5rem; margin-bottom: 12px;">${clinic.emoji}</div>
+                        <h3 style="margin-bottom: 4px;">${clinic.name}</h3>
+                        <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 4px;">📍 ${clinic.address}</p>
+                        <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 4px;">📞 ${clinic.phone}</p>
+                        <p style="color: var(--text-light); font-size: 0.85rem; margin-bottom: 12px;">🕐 ${clinic.timing}</p>
+                        <span class="badge badge-primary">${clinic.type}</span>
+                        <div style="margin-top: 12px;">
+                            <a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Render clinics on load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderClinics();
+        });
+    </script>
+</body>
+</html>

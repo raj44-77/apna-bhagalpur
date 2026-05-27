@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic Registration - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="login.html">🔑 Login</a></li>
+                <li><a href="clinic-signup.html" class="active">🏥 Register Clinic</a></li>
+            </ul>
+            <button class="hamburger">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>🏥 Clinic Registration</h1>
+            <p>Register your clinic to manage patient queues online</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div class="card">
+                <div class="card-header">
+                    <h3>🏥 Clinic Admin Details</h3>
+                </div>
+                <div class="card-body">
+                    <form id="clinicSignupForm">
+                        <div class="form-group">
+                            <label class="form-label">Admin Full Name *</label>
+                            <input type="text" class="form-control" id="clinicAdminName" placeholder="Enter your full name" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="clinicEmail" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="clinicPhone" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Your Clinic *</label>
+                            <select class="form-control" id="clinicSelect" required>
+                                <option value="">Choose your clinic...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="clinicPassword" placeholder="Create password (min 6 characters)" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control" id="clinicConfirm" placeholder="Confirm your password" required>
+                        </div>
+                        <div style="background: var(--secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 0.85rem; color: var(--text-mid);">
+                            ⚠️ <strong>Note:</strong> Only existing clinics in Bhagalpur can register. If your clinic is not listed, please contact support.
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">
+                            🏥 Register Clinic
+                        </button>
+                    </form>
+
+                    <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
+                        Already registered? <a href="login.html" style="color: var(--primary); font-weight: 600;">Login</a>
+                    </p>
+                    <p style="text-align: center; margin-top: 4px; color: var(--text-light);">
+                        Are you a patient? <a href="signup.html" style="color: var(--primary); font-weight: 600;">Sign Up as Patient</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <div class="brand-name">🏥 Apna Bhagalpur</div>
+                <p>Bhagalpur's trusted healthcare booking platform</p>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Populate clinic dropdown
+        function populateClinicSelect() {
+            const select = document.getElementById('clinicSelect');
+            CLINICS.forEach(clinic => {
+                select.innerHTML += `<option value="${clinic.id}">${clinic.emoji} ${clinic.name} - ${clinic.address}</option>`;
+            });
+        }
+
+        // Handle form submission
+        document.getElementById('clinicSignupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('clinicAdminName').value.trim();
+            const email = document.getElementById('clinicEmail').value.trim();
+            const phone = document.getElementById('clinicPhone').value.trim();
+            const clinicId = parseInt(document.getElementById('clinicSelect').value);
+            const password = document.getElementById('clinicPassword').value;
+            const confirm = document.getElementById('clinicConfirm').value;
+
+            // Validate passwords
+            if (password !== confirm) {
+                showToast('Error', 'Passwords do not match', 'error');
+                return;
+            }
+
+            // Validate phone
+            if (phone.length !== 10) {
+                showToast('Error', 'Please enter a valid 10-digit phone number', 'error');
+                return;
+            }
+
+            // Validate clinic selection
+            if (!clinicId) {
+                showToast('Error', 'Please select your clinic', 'error');
+                return;
+            }
+
+            const result = registerClinic(name, email, phone, password, clinicId);
+
+            if (result.success) {
+                showToast('Success!', 'Clinic registered successfully! You can now login.', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                showToast('Registration Failed', result.message, 'error');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            populateClinicSelect();
+        });
+    </script>
+</body>
+</html>

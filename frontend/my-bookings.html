@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+                <li><a href="my-bookings.html" class="active">📋 My Bookings</a></li>
+                <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>📋 My Bookings</h1>
+            <p>View all your appointments by phone number</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-header"><h3>🔍 Search Your Bookings</h3></div>
+                <div class="card-body">
+                    <form id="searchForm">
+                        <div class="form-group">
+                            <label class="form-label">Enter Your Phone Number *</label>
+                            <input type="tel" class="form-control" id="phoneSearch" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">🔍 Search Bookings</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="resultsSection" style="display:none;">
+                <h3 style="margin-bottom:16px;" id="resultsTitle"></h3>
+                <div id="bookingsList"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const phone = document.getElementById('phoneSearch').value.trim();
+            
+            if (phone.length !== 10) {
+                showToast('Error', 'Please enter a valid 10-digit phone number', 'error');
+                return;
+            }
+
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsTitle = document.getElementById('resultsTitle');
+            const bookingsList = document.getElementById('bookingsList');
+            
+            resultsSection.style.display = 'block';
+            resultsTitle.textContent = 'Loading...';
+            bookingsList.innerHTML = '<p>Searching...</p>';
+
+            try {
+                const myBookings = await API.getMyBookings(phone);
+                
+                if (myBookings.length === 0) {
+                    resultsTitle.textContent = 'No Bookings Found';
+                    bookingsList.innerHTML = `
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="empty-state">
+                                    <div class="empty-icon">📭</div>
+                                    <h3>No Bookings Found</h3>
+                                    <p>No appointments found for ${phone}</p>
+                                    <a href="booking.html" class="btn btn-primary">📅 Book Appointment</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultsTitle.textContent = `Found ${myBookings.length} booking(s) for ${phone}`;
+                    
+                    bookingsList.innerHTML = myBookings.map(b => `
+                        <div class="card" style="margin-bottom:16px;">
+                            <div class="card-body">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                                    <div style="flex:1;">
+                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                            <strong style="font-size:1.1rem;">#${b.slot_number}</strong>
+                                            <span style="color:var(--text-light);">|</span>
+                                            <span>${b.clinic_name || 'N/A'}</span>
+                                        </div>
+                                        <p style="margin:4px 0;color:var(--text-light);">👨‍⚕️ <strong>${b.doctor_name || 'N/A'}</strong></p>
+                                        <p style="margin:4px 0;color:var(--text-light);">📅 ${b.appointment_date} | 🕐 ${b.time_slot}</p>
+                                        <p style="margin:4px 0;color:var(--text-light);">🆔 ${b.booking_id}</p>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        ${getStatusBadge(b.status)}
+                                        <div style="margin-top:4px;">${getTypeBadge(b.booking_type)}</div>
+                                    </div>
+                                </div>
+                                <div class="divider"></div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    ${(b.status === 'waiting' || b.status === 'current') ? 
+                                        `<a href="tracking.html?clinic=${b.clinic_id}&slot=${b.slot_number}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                resultsTitle.textContent = 'Error';
+                bookingsList.innerHTML = '<p style="color:var(--danger);">Failed to fetch bookings. Check if backend is running.</p>';
+                console.error('My bookings error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
