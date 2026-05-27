@@ -2,7 +2,7 @@
 // APNA BHAGALPUR - API Service
 // ============================================================
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = 'https://apna-bhagalpur.onrender.com/api';
 
 const API = {
     // Auth
