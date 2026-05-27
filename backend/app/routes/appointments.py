@@ -46,7 +46,7 @@ async def book_appointment(data: BookingData, db: Session = Depends(get_db)):
         ).count()
         
         slot_num = count + 1
-        booking_id = f"BKG{date.today().strftime('%Y%m%d')}{slot_num:03d}"
+        booking_id = f"BKG{data.clinic_id}{date.today().strftime('%Y%m%d')}{slot_num:03d}"
         
         appointment = Appointment(
             booking_id=booking_id,
