@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import get_settings
-from .routes import auth, clinics, appointments, admin, queue, websocket
+from .routes import auth, clinics, appointments, admin, queue, websocket, analytics
 
 settings = get_settings()
 
@@ -26,6 +26,7 @@ app.include_router(clinics.router, prefix="/api/clinics", tags=["Clinics"])
 app.include_router(appointments.router, prefix="/api/appointments", tags=["Appointments"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(queue.router, prefix="/api/queue", tags=["Queue"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(websocket.router, tags=["WebSocket"])
 
 @app.get("/")

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .chart-bar {
+            background: linear-gradient(180deg, var(--primary-light), var(--primary));
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            transition: height 0.5s ease;
+        }
+        .chart-container {
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            height: 180px;
+            padding: 8px 0;
+        }
+        .chart-item {
+            flex: 1;
+            text-align: center;
+        }
+        .chart-label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .chart-value {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .analytics-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+        }
+        .peak-bar {
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+        .peak-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        .badge-large {
+            font-size: 1rem;
+            padding: 6px 12px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="admin.html">👨‍⚕️ Dashboard</a></li>
+                <li><a href="admin-analytics.html" class="active">📊 Analytics</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>📊 Clinic Analytics</h1>
+            <p>Insights and performance metrics for your clinic</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <!-- Controls -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-body">
+                    <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+                            <label class="form-label">Select Clinic</label>
+                            <select class="form-control" id="analyticsClinic" onchange="loadAll()">
+                                <option value="">Choose clinic...</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Period</label>
+                            <select class="form-control" id="analyticsPeriod" onchange="loadAll()" style="width:150px;">
+                                <option value="7">Last 7 Days</option>
+                                <option value="14">Last 14 Days</option>
+                                <option value="30">Last 30 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="analyticsContent" style="display:none;">
+                <!-- Overview Cards -->
+                <div class="grid-4" style="margin-bottom:24px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(59,130,246,0.1);">👥</div>
+                        <div class="stat-value" id="statTotal">-</div>
+                        <div class="stat-label">Total Patients</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(16,185,129,0.1);">✅</div>
+                        <div class="stat-value" id="statCompleted" style="color:var(--success);">-</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(239,68,68,0.1);">❌</div>
+                        <div class="stat-value" id="statAbsent" style="color:var(--danger);">-</div>
+                        <div class="stat-label">Absent Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:rgba(245,158,11,0.1);">⏱️</div>
+                        <div class="stat-value" id="statAvgTime">-</div>
+                        <div class="stat-label">Avg Consultation</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid-2" style="margin-bottom:24px;">
+                    <!-- Daily Patients Chart -->
+                    <div class="analytics-card">
+                        <h3 style="margin-bottom:16px;">📈 Daily Patients</h3>
+                        <div class="chart-container" id="dailyChart"></div>
+                    </div>
+
+                    <!-- Peak Hours -->
+                    <div class="analytics-card">
+                        <h3 style="margin-bottom:16px;">⏰ Peak Hours</h3>
+                        <div id="hourlyChart"></div>
+                    </div>
+                </div>
+
+                <!-- Doctor Performance -->
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-header"><h3>👨‍⚕️ Doctor Performance</h3></div>
+                    <div class="card-body" id="doctorTable"></div>
+                </div>
+
+                <!-- Recent Appointments -->
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-header"><h3>📋 Recent Appointments</h3></div>
+                    <div class="card-body" id="recentTable" style="max-height:400px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let analyticsClinicId = null;
+
+        async function populateClinics() {
+            const select = document.getElementById('analyticsClinic');
+            try {
+                const clinics = await API.getClinics();
+                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            } catch(e) {}
+        }
+
+        function getDays() {
+            return parseInt(document.getElementById('analyticsPeriod').value);
+        }
+
+        async function loadAll() {
+            const clinicId = document.getElementById('analyticsClinic').value;
+            if (!clinicId) {
+                document.getElementById('analyticsContent').style.display = 'none';
+                return;
+            }
+            analyticsClinicId = parseInt(clinicId);
+            document.getElementById('analyticsContent').style.display = 'block';
+            
+            const days = getDays();
+            await Promise.all([
+                loadOverview(days),
+                loadDaily(days),
+                loadHourly(days),
+                loadDoctors(days),
+                loadRecent()
+            ]);
+        }
+
+        async function loadOverview(days) {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`);
+                const data = await res.json();
+                document.getElementById('statTotal').textContent = data.total_patients;
+                document.getElementById('statCompleted').textContent = data.completion_rate + '%';
+                document.getElementById('statAbsent').textContent = data.absent_rate + '%';
+                document.getElementById('statAvgTime').textContent = data.avg_consultation_minutes + ' min';
+            } catch(e) {}
+        }
+
+        async function loadDaily(days) {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`);
+                const data = await res.json();
+                const maxVal = Math.max(...data.map(d => d.total), 1);
+                
+                document.getElementById('dailyChart').innerHTML = data.map(d => `
+                    <div class="chart-item">
+                        <div class="chart-value">${d.total}</div>
+                        <div class="chart-bar" style="height:${(d.total/maxVal)*140}px;"></div>
+                        <div class="chart-label">${d.day_name}</div>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function loadHourly(days) {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`);
+                const data = await res.json();
+                
+                document.getElementById('hourlyChart').innerHTML = data.map(h => `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <span style="width:80px;font-size:0.8rem;">${h.hour}</span>
+                        <div class="peak-bar" style="flex:1;">
+                            <div class="peak-fill" style="width:${h.percentage}%;"></div>
+                        </div>
+                        <span style="width:40px;font-size:0.8rem;text-align:right;">${h.count}</span>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function loadDoctors(days) {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`);
+                const data = await res.json();
+                
+                document.getElementById('doctorTable').innerHTML = data.length === 0 ? 
+                    '<p style="color:var(--text-light);">No data available</p>' :
+                    `<table style="width:100%;border-collapse:collapse;">
+                        <tr style="border-bottom:2px solid var(--border);">
+                            <th style="text-align:left;padding:8px;">Doctor</th>
+                            <th style="text-align:center;padding:8px;">Patients</th>
+                            <th style="text-align:center;padding:8px;">Completed</th>
+                            <th style="text-align:center;padding:8px;">Avg Time</th>
+                            <th style="text-align:center;padding:8px;">Rate</th>
+                        </tr>
+                        ${data.map(d => `
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:10px 8px;"><strong>${d.name}</strong><br><small style="color:var(--text-light);">${d.specialty}</small></td>
+                                <td style="text-align:center;padding:8px;">${d.total_patients}</td>
+                                <td style="text-align:center;padding:8px;">${d.completed}</td>
+                                <td style="text-align:center;padding:8px;">${d.avg_consultation_minutes} min</td>
+                                <td style="text-align:center;padding:8px;"><span class="badge ${d.completion_rate>=80?'badge-success':d.completion_rate>=50?'badge-warning':'badge-danger'}">${d.completion_rate}%</span></td>
+                            </tr>
+                        `).join('')}
+                    </table>`;
+            } catch(e) {}
+        }
+
+        async function loadRecent() {
+            try {
+                const res = await fetch(`${API_BASE}/analytics/recent/${analyticsClinicId}?limit=15`);
+                const data = await res.json();
+                
+                document.getElementById('recentTable').innerHTML = data.length === 0 ?
+                    '<p style="color:var(--text-light);">No appointments found</p>' :
+                    data.map(a => `
+                        <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid var(--border);">
+                            <div>
+                                <strong>${a.patient_name}</strong>
+                                <span style="color:var(--text-light);font-size:0.85rem;"> | ${a.doctor_name}</span>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <span style="font-size:0.8rem;color:var(--text-light);">${a.appointment_date} ${a.time_slot}</span>
+                                ${getStatusBadge(a.status)}
+                            </div>
+                        </div>
+                    `).join('');
+            } catch(e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', populateClinics);
+    </script>
+</body>
+</html>
