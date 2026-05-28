@@ -6,56 +6,83 @@
     <title>Analytics - Apna Bhagalpur</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .chart-bar {
-            background: linear-gradient(180deg, var(--primary-light), var(--primary));
-            border-radius: 4px 4px 0 0;
-            min-height: 4px;
-            transition: height 0.5s ease;
-        }
-        .chart-container {
-            display: flex;
-            align-items: end;
-            gap: 8px;
-            height: 180px;
-            padding: 8px 0;
-        }
-        .chart-item {
-            flex: 1;
-            text-align: center;
-        }
-        .chart-label {
-            font-size: 0.7rem;
-            color: var(--text-light);
-            margin-top: 4px;
-        }
-        .chart-value {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-        .analytics-card {
-            background: white;
-            border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: var(--card-shadow);
-            border: 1px solid var(--border);
-        }
-        .peak-bar {
-            height: 8px;
-            background: var(--primary-light);
-            border-radius: 4px;
-            margin: 4px 0;
-        }
-        .peak-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 4px;
-        }
-        .badge-large {
-            font-size: 1rem;
-            padding: 6px 12px;
-        }
-    </style>
+    .chart-bar {
+        background: linear-gradient(180deg, var(--primary-light), var(--primary));
+        border-radius: 4px 4px 0 0;
+        min-height: 4px;
+        transition: height 0.5s ease;
+    }
+    .chart-container {
+        display: flex;
+        align-items: end;
+        gap: 8px;
+        height: 180px;
+        padding: 8px 0;
+    }
+    .chart-item {
+        flex: 1;
+        text-align: center;
+    }
+    .chart-label {
+        font-size: 0.7rem;
+        color: var(--text-light);
+        margin-top: 4px;
+    }
+    .chart-value {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--primary);
+    }
+    .analytics-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: var(--card-shadow);
+        border: 1px solid var(--border);
+    }
+    .peak-bar {
+        height: 8px;
+        background: var(--primary-light);
+        border-radius: 4px;
+        margin: 4px 0;
+    }
+    .peak-fill {
+        height: 100%;
+        background: var(--primary);
+        border-radius: 4px;
+    }
+    .badge-large {
+        font-size: 1rem;
+        padding: 6px 12px;
+    }
+    
+    /* Dark Mode Fixes */
+    [data-theme="dark"] .analytics-card {
+        background: #1E293B;
+        border-color: #334155;
+    }
+    [data-theme="dark"] .analytics-card h3 {
+        color: #F1F5F9;
+    }
+    [data-theme="dark"] .chart-value {
+        color: #60A5FA !important;
+    }
+    [data-theme="dark"] .chart-label {
+        color: #CBD5E1;
+    }
+    [data-theme="dark"] .chart-bar {
+        background: linear-gradient(180deg, #60A5FA, #3B82F6);
+    }
+    [data-theme="dark"] .peak-fill {
+        background: #60A5FA;
+    }
+    [data-theme="dark"] table th {
+        color: #F1F5F9;
+    }
+    [data-theme="dark"] table td {
+        color: #CBD5E1;
+    }
+</style>
 </head>
 <body>
     <nav class="navbar">
