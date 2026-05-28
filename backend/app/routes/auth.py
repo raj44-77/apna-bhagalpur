@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 import bcrypt
 import re
+import random
 from ..database import get_db
 from ..models.user import User
 
@@ -14,6 +15,9 @@ router = APIRouter()
 SECRET_KEY = "apna-bhagalpur-jwt-secret-2024"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
+
+# Store reset codes temporarily
+reset_codes = {}
 
 
 class LoginData(BaseModel):
@@ -64,7 +68,6 @@ def create_access_token(user_id: int, user_type: str) -> str:
 @router.post("/login")
 async def login(data: LoginData, db: Session = Depends(get_db)):
     try:
-        # Validate email format
         if not validate_email(data.email):
             raise HTTPException(status_code=400, detail="Invalid email format")
         
@@ -99,7 +102,6 @@ async def login(data: LoginData, db: Session = Depends(get_db)):
 @router.post("/register/patient")
 async def register_patient(data: dict, db: Session = Depends(get_db)):
     try:
-        # Validate inputs
         if not validate_name(data.get("name", "")):
             raise HTTPException(status_code=400, detail="Name must be at least 3 characters")
         
@@ -112,7 +114,6 @@ async def register_patient(data: dict, db: Session = Depends(get_db)):
         if not validate_password(data.get("password", "")):
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
         
-        # Check existing
         if db.query(User).filter(User.email == data["email"]).first():
             raise HTTPException(status_code=400, detail="Email already registered")
         
@@ -142,7 +143,6 @@ async def register_patient(data: dict, db: Session = Depends(get_db)):
 @router.post("/register/clinic")
 async def register_clinic(data: dict, db: Session = Depends(get_db)):
     try:
-        # Validate inputs
         if not validate_name(data.get("name", "")):
             raise HTTPException(status_code=400, detail="Name must be at least 3 characters")
         
@@ -155,7 +155,6 @@ async def register_clinic(data: dict, db: Session = Depends(get_db)):
         if not validate_password(data.get("password", "")):
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
         
-        # Check existing
         if db.query(User).filter(User.email == data["email"]).first():
             raise HTTPException(status_code=400, detail="Email already registered")
         
@@ -174,6 +173,80 @@ async def register_clinic(data: dict, db: Session = Depends(get_db)):
         db.refresh(user)
         
         return {"id": user.id, "name": user.name, "email": user.email}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: dict, db: Session = Depends(get_db)):
+    try:
+        email = data.get("email", "").strip().lower()
+        phone = data.get("phone", "").strip()
+        
+        if not validate_email(email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        if not validate_phone(phone):
+            raise HTTPException(status_code=400, detail="Phone must be exactly 10 digits")
+        
+        user = db.query(User).filter(
+            User.email == email,
+            User.phone == phone
+        ).first()
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="No account found with this email and phone")
+        
+        reset_code = str(random.randint(100000, 999999))
+        reset_codes[email] = {
+            "code": reset_code,
+            "user_id": user.id,
+            "expires": datetime.utcnow() + timedelta(minutes=10)
+        }
+        
+        return {
+            "message": "Reset code generated",
+            "reset_code": reset_code,
+            "email": email
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reset-password")
+async def reset_password(data: dict, db: Session = Depends(get_db)):
+    try:
+        email = data.get("email", "").strip().lower()
+        code = data.get("code", "").strip()
+        new_password = data.get("new_password", "")
+        
+        if not validate_password(new_password):
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        stored = reset_codes.get(email)
+        if not stored:
+            raise HTTPException(status_code=400, detail="No reset code found. Please request again")
+        
+        if stored["code"] != code:
+            raise HTTPException(status_code=400, detail="Invalid reset code")
+        
+        if datetime.utcnow() > stored["expires"]:
+            del reset_codes[email]
+            raise HTTPException(status_code=400, detail="Reset code expired. Please request again")
+        
+        user = db.query(User).filter(User.id == stored["user_id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user.password = hash_password(new_password)
+        db.commit()
+        
+        del reset_codes[email]
+        
+        return {"message": "Password reset successful! You can now login."}
     except HTTPException:
         raise
     except Exception as e:
