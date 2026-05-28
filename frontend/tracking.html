@@ -146,7 +146,14 @@
         function connectWebSocket(clinicId) {
             if (ws) { ws.close(); }
             document.getElementById('wsIndicator').innerHTML = '🟡 Connecting...';
-            ws = new WebSocket(`ws://localhost:8000/ws/${clinicId}`);
+            
+            // Auto-detect WebSocket URL for local or production
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const wsUrl = isLocal 
+                ? `ws://localhost:8000/ws/${clinicId}`
+                : `wss://apna-bhagalpur.onrender.com/ws/${clinicId}`;
+            
+            ws = new WebSocket(wsUrl);
             ws.onopen = () => { console.log('🟢 Live!'); document.getElementById('wsIndicator').innerHTML = '🟢 Live updates active'; };
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
