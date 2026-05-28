@@ -89,6 +89,8 @@ async def login(data: LoginData, db: Session = Depends(get_db)):
                 "user_type": user.user_type,
                 "clinic_id": user.clinic_id,
                 "clinic_name": None,
+                "age": user.age,
+                "gender": user.gender,
                 "is_active": bool(user.is_active),
                 "created_at": str(user.created_at)
             }
@@ -122,12 +124,21 @@ async def register_patient(data: dict, db: Session = Depends(get_db)):
         
         hashed_password = hash_password(data["password"])
         
+        # Parse age
+        age = data.get("age")
+        if age and str(age).isdigit():
+            age = int(age)
+        else:
+            age = None
+        
         user = User(
             name=data["name"].strip(),
             email=data["email"].strip().lower(),
             phone=data["phone"].strip(),
             password=hashed_password,
-            user_type="patient"
+            user_type="patient",
+            age=age,
+            gender=data.get("gender", "").strip() or None
         )
         db.add(user)
         db.commit()

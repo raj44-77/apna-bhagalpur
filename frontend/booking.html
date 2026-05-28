@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-inner">
             <a href="index.html" class="nav-brand">
@@ -24,13 +23,10 @@
                 <li><a href="my-bookings.html">📋 My Bookings</a></li>
                 <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
             </ul>
-            <button class="hamburger">
-                <span></span><span></span><span></span>
-            </button>
+            <button class="hamburger"><span></span><span></span><span></span></button>
         </div>
     </nav>
 
-    <!-- Page Hero -->
     <section class="page-hero">
         <div class="page-hero-inner">
             <h1>📅 Book Your Appointment</h1>
@@ -38,14 +34,10 @@
         </div>
     </section>
 
-    <!-- Booking Form -->
     <section class="section">
         <div class="container-sm">
-            <!-- Booking Form Card -->
             <div class="card" id="bookingFormCard">
-                <div class="card-header">
-                    <h3>📝 Patient Details</h3>
-                </div>
+                <div class="card-header"><h3>📝 Patient Details</h3></div>
                 <div class="card-body">
                     <form id="bookingForm">
                         <div class="form-group">
@@ -55,6 +47,21 @@
                         <div class="form-group">
                             <label class="form-label">Phone Number *</label>
                             <input type="tel" class="form-control" id="phoneNumber" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
+                        </div>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control" id="patientAge" placeholder="Your age" min="1" max="120">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gender</label>
+                                <select class="form-control" id="patientGender">
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Select Clinic *</label>
@@ -78,14 +85,11 @@
                                 <option value="">Select time slot...</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">
-                            ✅ Confirm Booking
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn">✅ Confirm Booking</button>
                     </form>
                 </div>
             </div>
 
-            <!-- Confirmation Card (Hidden by default) -->
             <div class="card" id="confirmationCard" style="display: none; border-left: 4px solid var(--success);">
                 <div class="card-body">
                     <div style="text-align: center; margin-bottom: 24px;">
@@ -105,16 +109,10 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-inner">
-            <div class="footer-brand">
-                <div class="brand-name">🏥 Apna Bhagalpur</div>
-                <p>Bhagalpur's trusted healthcare booking platform</p>
-            </div>
-            <div class="footer-bottom">
-                <p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
-            </div>
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
         </div>
     </footer>
 
@@ -124,62 +122,39 @@
     <script>
         let currentBooking = null;
 
-        // Populate clinics from API
         async function populateClinics() {
             const select = document.getElementById('clinicSelect');
             try {
                 const clinics = await API.getClinics();
-                clinics.forEach(c => {
-                    select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`;
-                });
-            } catch (error) {
-                // Fallback to local data if API fails
-                CLINICS.forEach(c => {
-                    select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`;
-                });
+                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            } catch(e) {
+                CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
             }
-            
-            // Check URL params
             const urlParams = new URLSearchParams(window.location.search);
             const clinicId = urlParams.get('clinic');
-            if (clinicId) {
-                select.value = clinicId;
-                select.dispatchEvent(new Event('change'));
-            }
+            if (clinicId) { select.value = clinicId; select.dispatchEvent(new Event('change')); }
         }
 
-        // Populate time slots
         function populateTimeSlots() {
             const select = document.getElementById('timeSlot');
-            TIME_SLOTS.forEach(slot => {
-                select.innerHTML += `<option value="${slot}">${slot}</option>`;
-            });
+            TIME_SLOTS.forEach(slot => select.innerHTML += `<option value="${slot}">${slot}</option>`);
         }
 
-        // Clinic change - load doctors from API
         document.getElementById('clinicSelect').addEventListener('change', async function() {
             const clinicId = this.value;
             const doctorSelect = document.getElementById('doctorSelect');
-            doctorSelect.innerHTML = '<option value="">Loading doctors...</option>';
-            
+            doctorSelect.innerHTML = '<option value="">Loading...</option>';
             if (clinicId) {
                 try {
                     const doctors = await API.getDoctors(clinicId);
                     doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
                     doctorSelect.disabled = false;
-                    doctors.forEach(d => {
-                        doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.consultation_fee})</option>`;
-                    });
-                } catch (error) {
-                    // Fallback to local data
+                    doctors.forEach(d => doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.consultation_fee})</option>`);
+                } catch(e) {
                     const clinic = getClinicById(clinicId);
                     doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
                     doctorSelect.disabled = false;
-                    if (clinic) {
-                        clinic.doctors.forEach(d => {
-                            doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.fee})</option>`;
-                        });
-                    }
+                    if (clinic) clinic.doctors.forEach(d => doctorSelect.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty} (₹${d.fee})</option>`);
                 }
             } else {
                 doctorSelect.innerHTML = '<option value="">First select a clinic</option>';
@@ -187,23 +162,19 @@
             }
         });
 
-        // Form submission - API version
         document.getElementById('bookingForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const patientName = document.getElementById('patientName').value.trim();
             const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const patientAge = document.getElementById('patientAge').value || null;
+            const patientGender = document.getElementById('patientGender').value || null;
             const clinicId = parseInt(document.getElementById('clinicSelect').value);
             const doctorId = parseInt(document.getElementById('doctorSelect').value);
             const appointmentDate = document.getElementById('appointmentDate').value;
             const timeSlot = document.getElementById('timeSlot').value;
 
-            if (phoneNumber.length !== 10) {
-                showToast('Error', 'Please enter a valid 10-digit phone number', 'error');
-                return;
-            }
+            if (phoneNumber.length !== 10) { showToast('Error', 'Please enter a valid 10-digit phone number', 'error'); return; }
 
-            // Show loading
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner"></span> Booking...';
@@ -214,6 +185,8 @@
                     doctor_id: doctorId,
                     patient_name: patientName,
                     patient_phone: phoneNumber,
+                    patient_age: patientAge ? parseInt(patientAge) : null,
+                    patient_gender: patientGender || null,
                     appointment_date: appointmentDate,
                     time_slot: timeSlot
                 });
@@ -223,38 +196,32 @@
                     showConfirmation(result);
                     showToast('Success', `Slot #${result.slot_number} booked successfully!`, 'success');
                 } else {
-                    showToast('Error', result.detail || 'Booking failed. Please try again.', 'error');
+                    showToast('Error', result.detail || 'Booking failed', 'error');
                 }
-            } catch (error) {
-                showToast('Error', 'Cannot connect to server. Make sure backend is running on port 8000.', 'error');
-                console.error('Booking error:', error);
+            } catch(error) {
+                showToast('Error', 'Cannot connect to server', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '✅ Confirm Booking';
             }
         });
 
-        // Show confirmation
         function showConfirmation(booking) {
             document.getElementById('bookingFormCard').style.display = 'none';
             document.getElementById('confirmationCard').style.display = 'block';
-
-            const details = document.getElementById('bookingDetails');
-            details.innerHTML = `
+            document.getElementById('bookingDetails').innerHTML = `
                 <p><strong>Booking ID:</strong> ${booking.booking_id}</p>
-                <p><strong>Slot Number:</strong> <span style="font-size: 1.2rem; color: var(--primary); font-weight: 700;">#${booking.slot_number}</span></p>
-                <p><strong>Patient:</strong> ${booking.patient_name}</p>
+                <p><strong>Slot Number:</strong> <span style="font-size:1.2rem;color:var(--primary);font-weight:700;">#${booking.slot_number}</span></p>
+                <p><strong>Patient:</strong> ${booking.patient_name} ${booking.patient_age ? '('+booking.patient_age+'y)' : ''} ${booking.patient_gender || ''}</p>
                 <p><strong>Clinic:</strong> ${booking.clinic_name}</p>
                 <p><strong>Doctor:</strong> ${booking.doctor_name}</p>
                 <p><strong>Date:</strong> ${formatDate(booking.appointment_date)}</p>
                 <p><strong>Time:</strong> ${booking.time_slot}</p>
                 <p>${getStatusBadge(booking.status)}</p>
             `;
-
             document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&slot=${booking.slot_number}`;
         }
 
-        // Book another
         function bookAnother() {
             document.getElementById('bookingFormCard').style.display = 'block';
             document.getElementById('confirmationCard').style.display = 'none';
@@ -264,7 +231,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             populateClinics();
             populateTimeSlots();

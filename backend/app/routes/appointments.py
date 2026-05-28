@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 from pydantic import BaseModel
+from typing import Optional
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.clinic import Clinic
@@ -18,6 +19,8 @@ class BookingData(BaseModel):
     patient_phone: str
     appointment_date: str
     time_slot: str
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
 
 
 @router.post("/book")
@@ -54,6 +57,8 @@ async def book_appointment(data: BookingData, db: Session = Depends(get_db)):
             doctor_id=data.doctor_id,
             patient_name=data.patient_name,
             patient_phone=data.patient_phone,
+            patient_age=data.patient_age,
+            patient_gender=data.patient_gender,
             appointment_date=data.appointment_date,
             time_slot=data.time_slot,
             slot_number=slot_num,
@@ -101,6 +106,8 @@ async def book_appointment(data: BookingData, db: Session = Depends(get_db)):
             "doctor_id": appointment.doctor_id,
             "patient_name": appointment.patient_name,
             "patient_phone": appointment.patient_phone,
+            "patient_age": appointment.patient_age,
+            "patient_gender": appointment.patient_gender,
             "appointment_date": str(appointment.appointment_date),
             "time_slot": appointment.time_slot,
             "slot_number": appointment.slot_number,
@@ -187,6 +194,8 @@ async def my_bookings(phone: str, db: Session = Depends(get_db)):
         "doctor_id": a.doctor_id,
         "patient_name": a.patient_name,
         "patient_phone": a.patient_phone,
+        "patient_age": a.patient_age,
+        "patient_gender": a.patient_gender,
         "appointment_date": str(a.appointment_date),
         "time_slot": a.time_slot,
         "slot_number": a.slot_number,

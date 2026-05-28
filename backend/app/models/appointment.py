@@ -13,6 +13,8 @@ class Appointment(Base):
     doctor_id = Column(Integer, ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False)
     patient_name = Column(String(255), nullable=False)
     patient_phone = Column(String(20), nullable=False)
+    patient_age = Column(Integer, nullable=True)
+    patient_gender = Column(String(10), nullable=True)
     appointment_date = Column(Date, nullable=False)
     time_slot = Column(String(20), nullable=False)
     slot_number = Column(Integer, nullable=False)

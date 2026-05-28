@@ -13,6 +13,8 @@ class User(Base):
     password = Column(String(255), nullable=False)
     user_type = Column(String(20), default="patient")
     clinic_id = Column(Integer, nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(10), nullable=True)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime, nullable=True)
     created_at = Column(DateTime)

@@ -21,9 +21,7 @@
                 <li><a href="login.html">🔑 Login</a></li>
                 <li><a href="signup.html" class="active">📝 Sign Up</a></li>
             </ul>
-            <button class="hamburger">
-                <span></span><span></span><span></span>
-            </button>
+            <button class="hamburger"><span></span><span></span><span></span></button>
         </div>
     </nav>
 
@@ -37,9 +35,7 @@
     <section class="section">
         <div class="container-sm">
             <div class="card">
-                <div class="card-header">
-                    <h3>👤 Patient Details</h3>
-                </div>
+                <div class="card-header"><h3>👤 Patient Details</h3></div>
                 <div class="card-body">
                     <form id="signupForm">
                         <div class="form-group">
@@ -54,17 +50,32 @@
                             <label class="form-label">Phone Number *</label>
                             <input type="tel" class="form-control" id="signupPhone" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
                         </div>
-                        <div class="form-group">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Age</label>
+                                <input type="number" class="form-control" id="signupAge" placeholder="Your age" min="1" max="120">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gender</label>
+                                <select class="form-control" id="signupGender">
+                                    <option value="">Select...</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="position:relative;">
                             <label class="form-label">Password *</label>
                             <input type="password" class="form-control" id="signupPassword" placeholder="Create password (min 6 characters)" required minlength="6">
+                            <span onclick="togglePassword('signupPassword', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="position:relative;">
                             <label class="form-label">Confirm Password *</label>
                             <input type="password" class="form-control" id="signupConfirm" placeholder="Confirm your password" required>
+                            <span onclick="togglePassword('signupConfirm', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block btn-lg">
-                            📝 Create Account
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">📝 Create Account</button>
                     </form>
 
                     <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
@@ -80,13 +91,8 @@
 
     <footer class="footer">
         <div class="footer-inner">
-            <div class="footer-brand">
-                <div class="brand-name">🏥 Apna Bhagalpur</div>
-                <p>Bhagalpur's trusted healthcare booking platform</p>
-            </div>
-            <div class="footer-bottom">
-                <p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
-            </div>
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
         </div>
     </footer>
 
@@ -94,22 +100,30 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        }
+
         document.getElementById('signupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const name = document.getElementById('signupName').value.trim();
             const email = document.getElementById('signupEmail').value.trim();
             const phone = document.getElementById('signupPhone').value.trim();
+            const age = document.getElementById('signupAge').value;
+            const gender = document.getElementById('signupGender').value;
             const password = document.getElementById('signupPassword').value;
             const confirm = document.getElementById('signupConfirm').value;
-
-            if (password !== confirm) {
-                showToast('Error', 'Passwords do not match', 'error');
-                return;
-            }
-
+            
+            if (password !== confirm) { showToast('Error', 'Passwords do not match', 'error'); return; }
+            
             const result = await registerPatient(name, email, phone, password);
-
             if (result.success) {
                 showToast('Success!', 'Account created! Please login.', 'success');
                 setTimeout(() => { window.location.href = 'login.html'; }, 1500);

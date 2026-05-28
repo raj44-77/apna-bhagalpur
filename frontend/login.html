@@ -42,9 +42,10 @@
                             <label class="form-label">Email Address *</label>
                             <input type="email" class="form-control" id="loginEmail" placeholder="Enter your email" required>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="position:relative;">
                             <label class="form-label">Password *</label>
                             <input type="password" class="form-control" id="loginPassword" placeholder="Enter your password" required>
+                            <span onclick="togglePassword('loginPassword', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block btn-lg">🔑 Login</button>
                     </form>
@@ -62,8 +63,8 @@
                     <p style="text-align: center; margin-top: 16px; color: var(--text-light);">
                         Don't have an account? 
                         <a href="signup.html" style="color: var(--primary); font-weight: 600;">Sign Up</a> |
-                        <br><a href="forgot-password.html" style="color: var(--text-light); font-size: 0.9rem;">Forgot Password?</a>
                         <a href="clinic-signup.html" style="color: var(--primary); font-weight: 600;">Register Clinic</a>
+                        <br><a href="forgot-password.html" style="color: var(--text-light); font-size: 0.9rem;">Forgot Password?</a>
                     </p>
                 </div>
             </div>
@@ -81,7 +82,6 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // If already logged in, redirect to appropriate page
         if (AuthStore.isLoggedIn()) {
             const user = AuthStore.getCurrentUser();
             if (user.user_type === 'clinic') {
@@ -91,14 +91,22 @@
             }
         }
 
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
-
             const result = await loginUser(email, password);
-
             if (result.success) {
                 showToast('Welcome!', 'Logged in as ' + result.user.name, 'success');
                 setTimeout(() => {
