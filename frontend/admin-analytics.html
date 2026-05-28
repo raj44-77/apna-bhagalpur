@@ -6,83 +6,83 @@
     <title>Analytics - Apna Bhagalpur</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-    .chart-bar {
-        background: linear-gradient(180deg, var(--primary-light), var(--primary));
-        border-radius: 4px 4px 0 0;
-        min-height: 4px;
-        transition: height 0.5s ease;
-    }
-    .chart-container {
-        display: flex;
-        align-items: end;
-        gap: 8px;
-        height: 180px;
-        padding: 8px 0;
-    }
-    .chart-item {
-        flex: 1;
-        text-align: center;
-    }
-    .chart-label {
-        font-size: 0.7rem;
-        color: var(--text-light);
-        margin-top: 4px;
-    }
-    .chart-value {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--primary);
-    }
-    .analytics-card {
-        background: white;
-        border-radius: var(--radius);
-        padding: 20px;
-        box-shadow: var(--card-shadow);
-        border: 1px solid var(--border);
-    }
-    .peak-bar {
-        height: 8px;
-        background: var(--primary-light);
-        border-radius: 4px;
-        margin: 4px 0;
-    }
-    .peak-fill {
-        height: 100%;
-        background: var(--primary);
-        border-radius: 4px;
-    }
-    .badge-large {
-        font-size: 1rem;
-        padding: 6px 12px;
-    }
-    
-    /* Dark Mode Fixes */
-    [data-theme="dark"] .analytics-card {
-        background: #1E293B;
-        border-color: #334155;
-    }
-    [data-theme="dark"] .analytics-card h3 {
-        color: #F1F5F9;
-    }
-    [data-theme="dark"] .chart-value {
-        color: #60A5FA !important;
-    }
-    [data-theme="dark"] .chart-label {
-        color: #CBD5E1;
-    }
-    [data-theme="dark"] .chart-bar {
-        background: linear-gradient(180deg, #60A5FA, #3B82F6);
-    }
-    [data-theme="dark"] .peak-fill {
-        background: #60A5FA;
-    }
-    [data-theme="dark"] table th {
-        color: #F1F5F9;
-    }
-    [data-theme="dark"] table td {
-        color: #CBD5E1;
-    }
-</style>
+        .chart-bar {
+            background: linear-gradient(180deg, var(--primary-light), var(--primary));
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            transition: height 0.5s ease;
+        }
+        .chart-container {
+            display: flex;
+            align-items: end;
+            gap: 8px;
+            height: 180px;
+            padding: 8px 0;
+        }
+        .chart-item {
+            flex: 1;
+            text-align: center;
+        }
+        .chart-label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .chart-value {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .analytics-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+        }
+        .peak-bar {
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+        .peak-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        .badge-large {
+            font-size: 1rem;
+            padding: 6px 12px;
+        }
+        
+        /* Dark Mode Fixes */
+        [data-theme="dark"] .analytics-card {
+            background: #1E293B;
+            border-color: #334155;
+        }
+        [data-theme="dark"] .analytics-card h3 {
+            color: #F1F5F9;
+        }
+        [data-theme="dark"] .chart-value {
+            color: #60A5FA !important;
+        }
+        [data-theme="dark"] .chart-label {
+            color: #CBD5E1;
+        }
+        [data-theme="dark"] .chart-bar {
+            background: linear-gradient(180deg, #60A5FA, #3B82F6);
+        }
+        [data-theme="dark"] .peak-fill {
+            background: #60A5FA;
+        }
+        [data-theme="dark"] table th {
+            color: #F1F5F9;
+        }
+        [data-theme="dark"] table td {
+            color: #CBD5E1;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -112,15 +112,12 @@
 
     <section class="section">
         <div class="container">
-            <!-- Controls -->
             <div class="card" style="margin-bottom:24px;">
                 <div class="card-body">
                     <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;">
                         <div class="form-group" style="margin:0;flex:1;min-width:200px;">
-                            <label class="form-label">Select Clinic</label>
-                            <select class="form-control" id="analyticsClinic" onchange="loadAll()">
-                                <option value="">Choose clinic...</option>
-                            </select>
+                            <label class="form-label">Clinic</label>
+                            <input type="text" class="form-control" id="analyticsClinicName" readonly style="background:var(--secondary);">
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label">Period</label>
@@ -135,7 +132,6 @@
             </div>
 
             <div id="analyticsContent" style="display:none;">
-                <!-- Overview Cards -->
                 <div class="grid-4" style="margin-bottom:24px;">
                     <div class="stat-card">
                         <div class="stat-icon" style="background:rgba(59,130,246,0.1);">👥</div>
@@ -159,28 +155,22 @@
                     </div>
                 </div>
 
-                <!-- Charts Row -->
                 <div class="grid-2" style="margin-bottom:24px;">
-                    <!-- Daily Patients Chart -->
                     <div class="analytics-card">
                         <h3 style="margin-bottom:16px;">📈 Daily Patients</h3>
                         <div class="chart-container" id="dailyChart"></div>
                     </div>
-
-                    <!-- Peak Hours -->
                     <div class="analytics-card">
                         <h3 style="margin-bottom:16px;">⏰ Peak Hours</h3>
                         <div id="hourlyChart"></div>
                     </div>
                 </div>
 
-                <!-- Doctor Performance -->
                 <div class="card" style="margin-bottom:24px;">
                     <div class="card-header"><h3>👨‍⚕️ Doctor Performance</h3></div>
                     <div class="card-body" id="doctorTable"></div>
                 </div>
 
-                <!-- Recent Appointments -->
                 <div class="card" style="margin-bottom:24px;">
                     <div class="card-header"><h3>📋 Recent Appointments</h3></div>
                     <div class="card-body" id="recentTable" style="max-height:400px;overflow-y:auto;"></div>
@@ -202,12 +192,17 @@
     <script>
         let analyticsClinicId = null;
 
-        async function populateClinics() {
-            const select = document.getElementById('analyticsClinic');
-            try {
-                const clinics = await API.getClinics();
-                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
-            } catch(e) {}
+        function initClinic() {
+            const user = AuthStore.getCurrentUser();
+            if (!user || user.user_type !== 'clinic') {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            analyticsClinicId = user.clinic_id;
+            document.getElementById('analyticsClinicName').value = '🏥 ' + (user.clinic_name || 'Your Clinic');
+            document.getElementById('analyticsContent').style.display = 'block';
+            loadAll();
         }
 
         function getDays() {
@@ -215,14 +210,7 @@
         }
 
         async function loadAll() {
-            const clinicId = document.getElementById('analyticsClinic').value;
-            if (!clinicId) {
-                document.getElementById('analyticsContent').style.display = 'none';
-                return;
-            }
-            analyticsClinicId = parseInt(clinicId);
-            document.getElementById('analyticsContent').style.display = 'block';
-            
+            if (!analyticsClinicId) return;
             const days = getDays();
             await Promise.all([
                 loadOverview(days),
@@ -327,7 +315,7 @@
             } catch(e) {}
         }
 
-        document.addEventListener('DOMContentLoaded', populateClinics);
+        document.addEventListener('DOMContentLoaded', initClinic);
     </script>
 </body>
 </html>

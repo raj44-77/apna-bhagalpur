@@ -30,7 +30,7 @@
     <section class="page-hero">
         <div class="page-hero-inner">
             <h1>👨‍⚕️ Admin Dashboard</h1>
-            <p>Manage clinic queues - select any date to view bookings</p>
+            <p>Manage your clinic queue - select any date to view bookings</p>
         </div>
     </section>
 
@@ -40,10 +40,8 @@
                 <div class="card-body">
                     <div style="display:flex;gap:16px;align-items:end;flex-wrap:wrap;">
                         <div class="form-group" style="margin:0;flex:1;min-width:200px;">
-                            <label class="form-label">Select Clinic</label>
-                            <select class="form-control" id="adminClinicSelect">
-                                <option value="">Choose a clinic...</option>
-                            </select>
+                            <label class="form-label">Clinic</label>
+                            <input type="text" class="form-control" id="adminClinicName" readonly style="background:var(--secondary);">
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label class="form-label">Date</label>
@@ -141,32 +139,29 @@
             return document.getElementById('adminDate').value || null;
         }
 
-        async function populateAdminClinics() {
-            const select = document.getElementById('adminClinicSelect');
-            try {
-                const clinics = await API.getClinics();
-                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
-            } catch(e) {
-                CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+        function initClinic() {
+            const user = AuthStore.getCurrentUser();
+            if (!user || user.user_type !== 'clinic') {
+                window.location.href = 'login.html';
+                return;
             }
+            
+            currentClinicId = user.clinic_id;
+            document.getElementById('adminClinicName').value = '🏥 ' + (user.clinic_name || 'Your Clinic');
+            document.getElementById('dashboardContent').style.display = 'block';
+            
+            loadDoctors();
+            loadDashboard();
         }
 
-        document.getElementById('adminClinicSelect').addEventListener('change', async function() {
-            if (this.value) {
-                currentClinicId = parseInt(this.value);
-                document.getElementById('dashboardContent').style.display = 'block';
-                try {
-                    const doctors = await API.getDoctors(currentClinicId);
-                    const ds = document.getElementById('walkinDoctor');
-                    ds.innerHTML = '<option value="">Select...</option>';
-                    doctors.forEach(d => ds.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty}</option>`);
-                } catch(e) {}
-                seconds = 0;
-                await loadDashboard();
-            } else {
-                document.getElementById('dashboardContent').style.display = 'none';
-            }
-        });
+        async function loadDoctors() {
+            try {
+                const doctors = await API.getDoctors(currentClinicId);
+                const ds = document.getElementById('walkinDoctor');
+                ds.innerHTML = '<option value="">Select...</option>';
+                doctors.forEach(d => ds.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty}</option>`);
+            } catch(e) {}
+        }
 
         document.getElementById('adminDate').addEventListener('change', function() {
             if (currentClinicId) {
@@ -225,7 +220,6 @@
             document.getElementById('statAbsent').textContent = stats.absent || 0;
             document.getElementById('statWalkins').textContent = queue.total_walkins || 0;
 
-            // Update lock button
             const lockBtn = document.getElementById('lockBtn');
             if (lockBtn) {
                 if (dashboardData?.is_locked) {
@@ -294,7 +288,6 @@
                 const result = await API.togglePause(currentClinicId);
                 isPaused = result.is_paused;
                 const btn = document.getElementById('pauseBtn');
-                
                 if (isPaused) {
                     btn.textContent = '▶️ Resume';
                     btn.className = 'btn btn-success btn-block';
@@ -323,8 +316,8 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            populateAdminClinics();
             document.getElementById('adminDate').value = new Date().toISOString().split('T')[0];
+            initClinic();
         });
     </script>
 </body>
