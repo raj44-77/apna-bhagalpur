@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-icon">🏥</span>
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="profile.html" class="active">👤 Profile</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>👤 Profile Settings</h1>
+            <p>Update your personal information</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div class="card">
+                <div class="card-header"><h3>👤 Personal Details</h3></div>
+                <div class="card-body">
+                    <form id="profileForm">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" class="form-control" id="profileName" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control" id="profileEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="profilePhone" required pattern="[0-9]{10}" maxlength="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Age</label>
+                            <input type="number" class="form-control" id="profileAge" min="1" max="120">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            <select class="form-control" id="profileGender">
+                                <option value="">Select...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">💾 Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:24px;">
+                <div class="card-header"><h3>🔒 Change Password</h3></div>
+                <div class="card-body">
+                    <form id="passwordForm">
+                        <div class="form-group" style="position:relative;">
+                            <label class="form-label">Current Password *</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                            <span onclick="togglePassword('currentPassword', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
+                        </div>
+                        <div class="form-group" style="position:relative;">
+                            <label class="form-label">New Password *</label>
+                            <input type="password" class="form-control" id="newPassword" required minlength="6">
+                            <span onclick="togglePassword('newPassword', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
+                        </div>
+                        <div class="form-group" style="position:relative;">
+                            <label class="form-label">Confirm New Password *</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                            <span onclick="togglePassword('confirmPassword', this)" style="cursor:pointer;position:absolute;right:12px;top:38px;font-size:1.2rem;">👁️</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg">🔒 Update Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') { input.type = 'text'; icon.textContent = '🙈'; }
+            else { input.type = 'password'; icon.textContent = '👁️'; }
+        }
+
+        function loadProfile() {
+            const user = AuthStore.getCurrentUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+            document.getElementById('profileName').value = user.name || '';
+            document.getElementById('profileEmail').value = user.email || '';
+            document.getElementById('profilePhone').value = user.phone || '';
+            document.getElementById('profileAge').value = user.age || '';
+            document.getElementById('profileGender').value = user.gender || '';
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('profileName').value.trim();
+            const email = document.getElementById('profileEmail').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            const age = document.getElementById('profileAge').value;
+            const gender = document.getElementById('profileGender').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/update-profile`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, age, gender })
+                });
+                const result = await res.json();
+                if (result.id) {
+                    const user = AuthStore.getCurrentUser();
+                    user.name = name; user.email = email; user.phone = phone;
+                    user.age = age || null; user.gender = gender || null;
+                    AuthStore.setCurrentUser(user);
+                    showToast('Success!', 'Profile updated', 'success');
+                } else {
+                    showToast('Error', result.detail || 'Update failed', 'error');
+                }
+            } catch(err) { showToast('Error', 'Cannot connect to server', 'error'); }
+        });
+
+        document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) { showToast('Error', 'Passwords do not match', 'error'); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/change-password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+                });
+                const result = await res.json();
+                if (result.message) {
+                    showToast('Success!', 'Password changed', 'success');
+                    this.reset();
+                } else {
+                    showToast('Error', result.detail || 'Failed', 'error');
+                }
+            } catch(err) { showToast('Error', 'Cannot connect to server', 'error'); }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

@@ -269,3 +269,79 @@ async def reset_password(data: dict, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/update-profile")
+async def update_profile(data: dict, db: Session = Depends(get_db)):
+    try:
+        user_id = data.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID required")
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not validate_name(data.get("name", "")):
+            raise HTTPException(status_code=400, detail="Name must be at least 3 characters")
+        
+        if not validate_email(data.get("email", "")):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
+        if not validate_phone(data.get("phone", "")):
+            raise HTTPException(status_code=400, detail="Phone must be exactly 10 digits")
+        
+        # Check if email already taken by another user
+        existing_email = db.query(User).filter(User.email == data["email"], User.id != user_id).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        
+        # Check if phone already taken
+        existing_phone = db.query(User).filter(User.phone == data["phone"], User.id != user_id).first()
+        if existing_phone:
+            raise HTTPException(status_code=400, detail="Phone already in use")
+        
+        user.name = data["name"].strip()
+        user.email = data["email"].strip().lower()
+        user.phone = data["phone"].strip()
+        user.age = int(data["age"]) if data.get("age") and str(data["age"]).isdigit() else None
+        user.gender = data.get("gender") or None
+        
+        db.commit()
+        db.refresh(user)
+        
+        return {"id": user.id, "name": user.name, "email": user.email, "message": "Profile updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/change-password")
+async def change_password(data: dict, db: Session = Depends(get_db)):
+    try:
+        user_id = data.get("user_id")
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID required")
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not verify_password(current_password, user.password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        if not validate_password(new_password):
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        user.password = hash_password(new_password)
+        db.commit()
+        
+        return {"message": "Password changed successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

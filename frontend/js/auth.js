@@ -88,7 +88,7 @@ function checkAuth() {
     const user = AuthStore.getCurrentUser();
     const page = window.location.pathname.split('/').pop();
     
-    const publicPages = ['index.html', 'login.html', 'signup.html', 'clinic-signup.html', ''];
+    const publicPages = ['index.html', 'login.html', 'signup.html', 'clinic-signup.html', 'forgot-password.html', ''];
     if (publicPages.includes(page)) return true;
     
     if (!user) {
@@ -144,6 +144,7 @@ function updateAuthUI() {
         const typeLabel = user.user_type === 'clinic' ? '🏥' : '👤';
         authArea.innerHTML = `
             <span style="font-size:0.85rem;">${typeLabel} ${user.name.split(' ')[0]}</span>
+            <a href="profile.html" class="btn btn-sm btn-outline">👤 Profile</a>
             <button onclick="logoutUser()" class="btn btn-sm btn-outline" style="color:var(--danger);">🚪 Logout</button>
         `;
     } else {
