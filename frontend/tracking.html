@@ -131,17 +131,21 @@
     <script>
         let currentTracking = null;
         let ws = null;
-
-        function populateClinics() {
-            const select = document.getElementById('clinicSelect');
-            CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
-            const urlParams = new URLSearchParams(window.location.search);
-            const clinicId = urlParams.get('clinic');
-            const slotNum = urlParams.get('slot');
-            if (clinicId) document.getElementById('clinicSelect').value = clinicId;
-            if (slotNum) document.getElementById('slotInput').value = slotNum;
-            if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
-        }
+        async function populateClinics() {
+    const select = document.getElementById('clinicSelect');
+    try {
+        const clinics = await API.getClinics();
+        clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+    } catch(e) {
+        CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const clinicId = urlParams.get('clinic');
+    const slotNum = urlParams.get('slot');
+    if (clinicId) document.getElementById('clinicSelect').value = clinicId;
+    if (slotNum) document.getElementById('slotInput').value = slotNum;
+    if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
+}
 
         function connectWebSocket(clinicId) {
             if (ws) { ws.close(); }
