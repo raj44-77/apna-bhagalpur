@@ -86,8 +86,8 @@
     <section class="section" style="background: var(--secondary);">
         <div class="container">
             <div class="grid-4">
-                <div class="stat-card"><div class="stat-icon" style="background: rgba(30,64,175,0.1);">🏥</div><div class="stat-value">5+</div><div class="stat-label">Partner Clinics</div></div>
-                <div class="stat-card"><div class="stat-icon" style="background: rgba(16,185,129,0.1);">👨‍⚕️</div><div class="stat-value">12+</div><div class="stat-label">Expert Doctors</div></div>
+                <div class="stat-card"><div class="stat-icon" style="background: rgba(30,64,175,0.1);">🏥</div><div class="stat-value">13+</div><div class="stat-label">Partner Clinics</div></div>
+                <div class="stat-card"><div class="stat-icon" style="background: rgba(16,185,129,0.1);">👨‍⚕️</div><div class="stat-value">20+</div><div class="stat-label">Expert Doctors</div></div>
                 <div class="stat-card"><div class="stat-icon" style="background: rgba(245,158,11,0.1);">👥</div><div class="stat-value">1000+</div><div class="stat-label">Patients Served</div></div>
                 <div class="stat-card"><div class="stat-icon" style="background: rgba(239,68,68,0.1);">⭐</div><div class="stat-value">98%</div><div class="stat-label">Satisfaction Rate</div></div>
             </div>
@@ -119,22 +119,41 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        function renderClinics() {
+        async function renderClinics() {
             const container = document.getElementById('clinicCards');
-            CLINICS.forEach(clinic => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `<div class="card-body">
-                    <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji}</div>
-                    <h3 style="margin-bottom:4px;">${clinic.name}</h3>
-                    <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address}</p>
-                    <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone}</p>
-                    <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing}</p>
-                    <span class="badge badge-primary">${clinic.type}</span>
-                    <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
-                </div>`;
-                container.appendChild(card);
-            });
+            try {
+                const clinics = await API.getClinics();
+                container.innerHTML = '';
+                clinics.forEach(clinic => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="card-body">
+                        <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji}</div>
+                        <h3 style="margin-bottom:4px;">${clinic.name}</h3>
+                        <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address}</p>
+                        <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone || 'N/A'}</p>
+                        <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing || '9:00 AM - 5:00 PM'}</p>
+                        <span class="badge badge-primary">${clinic.clinic_type || 'Clinic'}</span>
+                        <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
+                    </div>`;
+                    container.appendChild(card);
+                });
+            } catch(e) {
+                CLINICS.forEach(clinic => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="card-body">
+                        <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji}</div>
+                        <h3 style="margin-bottom:4px;">${clinic.name}</h3>
+                        <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address}</p>
+                        <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone}</p>
+                        <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing}</p>
+                        <span class="badge badge-primary">${clinic.type}</span>
+                        <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
+                    </div>`;
+                    container.appendChild(card);
+                });
+            }
         }
         document.addEventListener('DOMContentLoaded', renderClinics);
     </script>
