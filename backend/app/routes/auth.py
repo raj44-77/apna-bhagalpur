@@ -8,6 +8,7 @@ import re
 import random
 from ..database import get_db
 from ..models.user import User
+from ..models.clinic import Clinic
 
 router = APIRouter()
 
@@ -76,6 +77,13 @@ async def login(data: LoginData, db: Session = Depends(get_db)):
         if not user or not verify_password(data.password, user.password):
             raise HTTPException(status_code=401, detail="Invalid email or password")
         
+        # Get clinic name if user is a clinic admin
+        clinic_name = None
+        if user.clinic_id:
+            clinic = db.query(Clinic).filter(Clinic.id == user.clinic_id).first()
+            if clinic:
+                clinic_name = clinic.name
+        
         access_token = create_access_token(user.id, user.user_type)
         
         return {
@@ -88,7 +96,7 @@ async def login(data: LoginData, db: Session = Depends(get_db)):
                 "phone": user.phone,
                 "user_type": user.user_type,
                 "clinic_id": user.clinic_id,
-                "clinic_name": None,
+                "clinic_name": clinic_name,
                 "age": user.age,
                 "gender": user.gender,
                 "is_active": bool(user.is_active),
@@ -124,7 +132,6 @@ async def register_patient(data: dict, db: Session = Depends(get_db)):
         
         hashed_password = hash_password(data["password"])
         
-        # Parse age
         age = data.get("age")
         if age and str(age).isdigit():
             age = int(age)
