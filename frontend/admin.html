@@ -304,7 +304,32 @@
             const doctorId = parseInt(document.getElementById('walkinDoctor').value);
             if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
             try {
-                await API.addWalkin(currentClinicId, { clinic_id: currentClinicId, doctor_id: doctorId, patient_name: name, patient_phone: phone }, getSelectedDate());
+                async function addWalkIn() {
+    if (!currentClinicId) { showToast('Error', 'No clinic selected', 'error'); return; }
+    
+    const name = document.getElementById('walkinName').value.trim();
+    const phone = document.getElementById('walkinPhone').value.trim();
+    const doctorId = parseInt(document.getElementById('walkinDoctor').value);
+    
+    if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
+    
+    try {
+        const result = await API.addWalkin(currentClinicId, { 
+            clinic_id: currentClinicId, 
+            doctor_id: doctorId, 
+            patient_name: name, 
+            patient_phone: phone || '' 
+        }, getSelectedDate());
+        
+        hideModal('walkinModal');
+        document.getElementById('walkinForm').reset();
+        showToast('Added', `${name} added to queue`, 'success');
+        await loadDashboard();
+    } catch(e) { 
+        console.error('Walk-in error:', e);
+        showToast('Error', 'Failed to add walk-in', 'error'); 
+    }
+}
                 hideModal('walkinModal');
                 document.getElementById('walkinForm').reset();
                 showToast('Added', `${name} added to queue`, 'success');
