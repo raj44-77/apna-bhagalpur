@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 class WalkInData(BaseModel):
-    clinic_id: int
+    clinic_id: int = 0
     doctor_id: int
     patient_name: str
     patient_phone: str = ""
