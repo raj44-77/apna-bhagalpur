@@ -96,29 +96,64 @@
         <div class="modal">
             <div class="modal-header"><h3>🚶 Add Walk-in</h3><button class="modal-close" onclick="hideModal('walkinModal')">×</button></div>
             <div class="modal-body">
-                <form id="walkinForm"><div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" id="walkinName" required></div>
-                <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="walkinPhone"></div>
-                <div class="form-group"><label class="form-label">Doctor *</label><select class="form-control" id="walkinDoctor" required><option value="">Select...</option></select></div></form>
+                <form id="walkinForm">
+                    <div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" id="walkinName" required></div>
+                    <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="walkinPhone"></div>
+                    <div class="form-group"><label class="form-label">Doctor *</label><select class="form-control" id="walkinDoctor" required><option value="">Select...</option></select></div>
+                </form>
             </div>
-            <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('walkinModal')">Cancel</button><button class="btn btn-success" onclick="addWalkIn()">Add</button></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('walkinModal')">Cancel</button>
+                <button class="btn btn-success" onclick="addWalkIn()">Add</button>
+            </div>
         </div>
     </div>
 
     <div class="modal-overlay hidden" id="absentModal">
-        <div class="modal"><div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
-        <div class="modal-body"><p>Mark current patient as absent?</p></div>
-        <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button><button class="btn btn-danger" onclick="markAbsent()">Confirm</button></div></div>
+        <div class="modal">
+            <div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
+            <div class="modal-body"><p>Mark current patient as absent?</p></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="markAbsent()">Confirm</button>
+            </div>
+        </div>
     </div>
 
     <div class="modal-overlay hidden" id="notifyModal">
-        <div class="modal"><div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div>
-        <div class="modal-body"><p style="margin-bottom:12px;">Send message to <strong id="notifyCount">0</strong> patients for <strong id="notifyDate"></strong></p>
-        <div class="form-group"><label class="form-label">Message Template</label><select class="form-control" id="msgTemplate" onchange="setTemplate()"><option value="">Select template...</option><option value="Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.">🚨 Emergency - Doctor Unavailable</option><option value="Doctor is running 1 hour late today. Please plan accordingly. Sorry for the delay.">⏰ Doctor Running Late</option><option value="Clinic is closed today due to unforeseen circumstances. Please visit tomorrow.">🏥 Clinic Closed Today</option><option value="Your appointment is confirmed for today. Please arrive on time.">✅ Appointment Reminder</option><option value="custom">✏️ Custom Message</option></select></div>
-        <div class="form-group"><label class="form-label">Message *</label><textarea class="form-control" id="notifyMessage" rows="3">Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.</textarea></div></div>
-        <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('notifyModal')">Cancel</button><button class="btn" style="background:#25D366;color:white;" onclick="sendBulkWhatsApp()">📱 Send to All</button></div></div>
+        <div class="modal">
+            <div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div>
+            <div class="modal-body">
+                <p style="margin-bottom:12px;">Send message to <strong id="notifyCount">0</strong> patients for <strong id="notifyDate"></strong></p>
+                <div class="form-group">
+                    <label class="form-label">Message Template</label>
+                    <select class="form-control" id="msgTemplate" onchange="setTemplate()">
+                        <option value="">Select template...</option>
+                        <option value="Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.">🚨 Emergency - Doctor Unavailable</option>
+                        <option value="Doctor is running 1 hour late today. Please plan accordingly. Sorry for the delay.">⏰ Doctor Running Late</option>
+                        <option value="Clinic is closed today due to unforeseen circumstances. Please visit tomorrow.">🏥 Clinic Closed Today</option>
+                        <option value="Your appointment is confirmed for today. Please arrive on time.">✅ Appointment Reminder</option>
+                        <option value="custom">✏️ Custom Message</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message *</label>
+                    <textarea class="form-control" id="notifyMessage" rows="3">Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('notifyModal')">Cancel</button>
+                <button class="btn" style="background:#25D366;color:white;" onclick="sendBulkWhatsApp()">📱 Send to All</button>
+            </div>
+        </div>
     </div>
 
-    <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div></div></footer>
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
+        </div>
+    </footer>
 
     <script src="js/app.js"></script>
     <script src="js/api.js"></script>
@@ -172,7 +207,7 @@
             const name = document.getElementById('walkinName').value.trim(), phone = document.getElementById('walkinPhone').value.trim(), doctorId = parseInt(document.getElementById('walkinDoctor').value);
             if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
             if (!currentClinicId) { showToast('Error', 'No clinic', 'error'); return; }
-            try { const result = await API.addWalkin(currentClinicId, { doctor_id: doctorId, patient_name: name, patient_phone: phone || '' }, getSelectedDate()); console.log('Walk-in:', result); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${name} added`, 'success'); await loadDashboard(); } catch(e) { console.error(e); showToast('Error', 'Failed', 'error'); }
+            try { const result = await API.addWalkin(currentClinicId, { doctor_id: doctorId, patient_name: name, patient_phone: phone || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${name} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
         async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; clearInterval(timerInterval); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; startTimer(); } } catch(e) {} }

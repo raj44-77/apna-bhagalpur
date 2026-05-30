@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.queue import QueueState
@@ -99,6 +99,10 @@ async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_
         slot_num = count + 1
         booking_id = f"WLK{clinic_id}{today.replace('-','')}{slot_num:03d}"
         
+        # Indian Standard Time (UTC+5:30)
+        ist = timezone(timedelta(hours=5, minutes=30))
+        ist_time = datetime.now(ist).strftime("%I:%M %p")
+        
         appointment = Appointment(
             booking_id=booking_id,
             clinic_id=clinic_id,
@@ -106,7 +110,7 @@ async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_
             patient_name=patient_name,
             patient_phone=patient_phone or "",
             appointment_date=today,
-            time_slot=datetime.now().strftime("%I:%M %p"),
+            time_slot=ist_time,
             slot_number=slot_num,
             booking_type="walkin",
             status="waiting"
