@@ -10,7 +10,7 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="index.html" class="nav-brand">
-               <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px; width:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.2); padding:3px; background:white;">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
                 <div>
                     <div class="brand-name">Apna Bhagalpur</div>
                     <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
@@ -84,7 +84,9 @@
     <script>
         if (AuthStore.isLoggedIn()) {
             const user = AuthStore.getCurrentUser();
-            if (user.user_type === 'clinic') {
+            if (user.user_type === 'admin') {
+                window.location.href = 'super-admin.html';
+            } else if (user.user_type === 'clinic') {
                 window.location.href = 'admin.html';
             } else {
                 window.location.href = 'booking.html';
@@ -93,13 +95,8 @@
 
         function togglePassword(inputId, icon) {
             const input = document.getElementById(inputId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                icon.textContent = '👁️';
-            }
+            if (input.type === 'password') { input.type = 'text'; icon.textContent = '🙈'; }
+            else { input.type = 'password'; icon.textContent = '👁️'; }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -110,7 +107,9 @@
             if (result.success) {
                 showToast('Welcome!', 'Logged in as ' + result.user.name, 'success');
                 setTimeout(() => {
-                    if (result.user.user_type === 'clinic') {
+                    if (result.user.user_type === 'admin') {
+                        window.location.href = 'super-admin.html';
+                    } else if (result.user.user_type === 'clinic') {
                         window.location.href = 'admin.html';
                     } else {
                         window.location.href = 'booking.html';

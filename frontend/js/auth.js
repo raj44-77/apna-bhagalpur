@@ -29,7 +29,7 @@ const AuthStore = {
 
 async function loginUser(email, password) {
     try {
-        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://192.168.1.34:8000/api';
+        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://localhost:8000/api';
         const res = await fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ async function loginUser(email, password) {
 
 async function registerPatient(name, email, phone, password) {
     try {
-        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://192.168.1.34:8000/api';
+        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://localhost:8000/api';
         const res = await fetch(`${baseUrl}/auth/register/patient`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@ async function registerPatient(name, email, phone, password) {
 
 async function registerClinic(name, email, phone, password, clinicId) {
     try {
-        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://192.168.1.34:8000/api';
+        const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://localhost:8000/api';
         const res = await fetch(`${baseUrl}/auth/register/clinic`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -96,8 +96,14 @@ function checkAuth() {
         return false;
     }
     
-    if (page === 'admin.html' && user.user_type !== 'clinic') {
+    if (page === 'admin.html' && user.user_type !== 'clinic' && user.user_type !== 'admin') {
         alert('Only clinic admins can access this page');
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    if (page === 'super-admin.html' && user.user_type !== 'admin') {
+        alert('Access denied. Super admin only.');
         window.location.href = 'login.html';
         return false;
     }
@@ -115,7 +121,12 @@ function updateAuthUI() {
     const myBookingsLink = navLinks.querySelector('a[href="my-bookings.html"]');
     const adminLink = navLinks.querySelector('a[href="admin.html"]');
 
-    if (user && user.user_type === 'clinic') {
+    if (user && user.user_type === 'admin') {
+        if (bookingLink) bookingLink.style.display = 'none';
+        if (trackingLink) trackingLink.style.display = 'none';
+        if (myBookingsLink) myBookingsLink.style.display = 'none';
+        if (adminLink) adminLink.style.display = '';
+    } else if (user && user.user_type === 'clinic') {
         if (bookingLink) bookingLink.style.display = 'none';
         if (trackingLink) trackingLink.style.display = 'none';
         if (myBookingsLink) myBookingsLink.style.display = 'none';
@@ -141,7 +152,7 @@ function updateAuthUI() {
     }
 
     if (user) {
-        const typeLabel = user.user_type === 'clinic' ? '🏥' : '👤';
+        const typeLabel = user.user_type === 'admin' ? '👑' : user.user_type === 'clinic' ? '🏥' : '👤';
         authArea.innerHTML = `
             <span style="font-size:0.85rem;">${typeLabel} ${user.name.split(' ')[0]}</span>
             <a href="profile.html" class="btn btn-sm btn-outline">👤 Profile</a>
