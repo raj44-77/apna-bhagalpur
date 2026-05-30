@@ -106,14 +106,14 @@ async def add_walkin(clinic_id: int, data: WalkInData, appointment_date: str = N
         Appointment.appointment_date == today
     ).count()
     
-    booking_id = f"WLK{today.replace('-','')}{count + 1:03d}"
+    booking_id = f"WLK{clinic_id}{today.replace('-','')}{count + 1:03d}"
     
     appointment = Appointment(
         booking_id=booking_id,
         clinic_id=clinic_id,
         doctor_id=data.doctor_id,
         patient_name=data.patient_name,
-        patient_phone=data.patient_phone,
+        patient_phone=data.patient_phone or "",
         appointment_date=today,
         time_slot=datetime.now().strftime("%I:%M %p"),
         slot_number=count + 1,
@@ -198,6 +198,7 @@ async def get_dashboard(clinic_id: int, appointment_date: str = None, db: Sessio
             "booking_id": a.booking_id,
             "slot_number": a.slot_number,
             "patient_name": a.patient_name,
+            "patient_phone": a.patient_phone,
             "booking_type": a.booking_type,
             "time_slot": a.time_slot,
             "status": a.status,
