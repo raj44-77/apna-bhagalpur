@@ -99,21 +99,11 @@ const API = {
     },
 
     async addWalkin(clinicId, data, appointmentDate = null) {
-    let url = `${API_BASE}/admin/add-walkin/${clinicId}`;
-    if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-    // Don't send clinic_id in body - it's in the URL
-    const body = {
-        doctor_id: data.doctor_id,
-        patient_name: data.patient_name,
-        patient_phone: data.patient_phone || ""
-    };
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    return res.json();
-},
+        let url = `${API_BASE}/admin/add-walkin/${clinicId}?doctor_id=${data.doctor_id}&patient_name=${encodeURIComponent(data.patient_name)}&patient_phone=${encodeURIComponent(data.patient_phone || '')}`;
+        if (appointmentDate) url += `&appointment_date=${appointmentDate}`;
+        const res = await fetch(url, { method: 'POST' });
+        return res.json();
+    },
 
     // Queue Lock
     async lockQueue(clinicId, appointmentDate = null) {

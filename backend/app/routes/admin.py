@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date, datetime
-from pydantic import BaseModel
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.queue import QueueState
@@ -10,13 +9,6 @@ from ..models.doctor import Doctor
 from .websocket import broadcast
 
 router = APIRouter()
-
-
-class WalkInData(BaseModel):
-    clinic_id: int = 0
-    doctor_id: int
-    patient_name: str
-    patient_phone: str = ""
 
 
 @router.post("/next-slot/{clinic_id}")
@@ -95,28 +87,26 @@ async def mark_absent(clinic_id: int, appointment_date: str = None, db: Session 
 
 
 @router.post("/add-walkin/{clinic_id}")
-async def add_walkin(clinic_id: int, data: WalkInData, appointment_date: str = None, db: Session = Depends(get_db)):
+async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
-    
-    clinic = db.query(Clinic).filter(Clinic.id == clinic_id).first()
-    doctor = db.query(Doctor).filter(Doctor.id == data.doctor_id).first()
     
     count = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date == today
     ).count()
     
-    booking_id = f"WLK{clinic_id}{today.replace('-','')}{count + 1:03d}"
+    slot_num = count + 1
+    booking_id = f"WLK{clinic_id}{today.replace('-','')}{slot_num:03d}"
     
     appointment = Appointment(
         booking_id=booking_id,
         clinic_id=clinic_id,
-        doctor_id=data.doctor_id,
-        patient_name=data.patient_name,
-        patient_phone=data.patient_phone or "",
+        doctor_id=doctor_id,
+        patient_name=patient_name,
+        patient_phone=patient_phone or "",
         appointment_date=today,
         time_slot=datetime.now().strftime("%I:%M %p"),
-        slot_number=count + 1,
+        slot_number=slot_num,
         booking_type="walkin",
         status="waiting"
     )
@@ -128,12 +118,7 @@ async def add_walkin(clinic_id: int, data: WalkInData, appointment_date: str = N
         QueueState.appointment_date == today
     ).first()
     if not queue:
-        queue = QueueState(
-            clinic_id=clinic_id,
-            doctor_id=data.doctor_id,
-            appointment_date=today,
-            current_slot_number=0
-        )
+        queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0)
         db.add(queue)
     queue.total_walkins += 1
     
@@ -143,22 +128,16 @@ async def add_walkin(clinic_id: int, data: WalkInData, appointment_date: str = N
     await broadcast(clinic_id, {
         "action": "add_walkin",
         "slot": appointment.slot_number,
-        "patient": data.patient_name,
-        "message": f"Walk-in added: {data.patient_name}"
+        "patient": patient_name,
+        "message": f"Walk-in added: {patient_name}"
     })
     
-    return {
-        "id": appointment.id,
-        "slot_number": appointment.slot_number,
-        "patient_name": appointment.patient_name,
-        "status": appointment.status
-    }
+    return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
 
 
 @router.get("/dashboard/{clinic_id}")
 async def get_dashboard(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
-    print(f"DEBUG Dashboard: clinic={clinic_id}, date={today}")
     
     queue = db.query(QueueState).filter(
         QueueState.clinic_id == clinic_id,
@@ -169,8 +148,6 @@ async def get_dashboard(clinic_id: int, appointment_date: str = None, db: Sessio
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date == today
     ).order_by(Appointment.slot_number).all()
-    
-    print(f"DEBUG Dashboard: Found {len(appointments)} appointments")
     
     current = None
     for a in appointments:
@@ -223,18 +200,13 @@ async def lock_queue(clinic_id: int, appointment_date: str = None, db: Session =
     ).first()
     
     if not queue:
-        queue = QueueState(
-            clinic_id=clinic_id,
-            appointment_date=today,
-            current_slot_number=0,
-            is_locked=True
-        )
+        queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0, is_locked=True)
         db.add(queue)
     else:
         queue.is_locked = True
     
     db.commit()
-    return {"message": f"Queue locked for {today}", "is_locked": True, "appointment_date": today}
+    return {"message": f"Queue locked for {today}", "is_locked": True}
 
 
 @router.post("/unlock/{clinic_id}")
@@ -250,7 +222,7 @@ async def unlock_queue(clinic_id: int, appointment_date: str = None, db: Session
         queue.is_locked = False
         db.commit()
     
-    return {"message": f"Queue unlocked for {today}", "is_locked": False, "appointment_date": today}
+    return {"message": f"Queue unlocked for {today}", "is_locked": False}
 
 
 @router.get("/is-locked/{clinic_id}")
