@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .chart-bar-super {
+            background: linear-gradient(180deg, #8B5CF6, #6D28D9);
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            transition: height 0.5s ease;
+        }
+        .chart-container-super {
+            display: flex;
+            align-items: end;
+            gap: 4px;
+            height: 160px;
+            padding: 8px 0;
+        }
+        .chart-item-super {
+            flex: 1;
+            text-align: center;
+        }
+        .chart-label-super {
+            font-size: 0.6rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .chart-value-super {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #6D28D9;
+        }
+        [data-theme="dark"] .chart-value-super {
+            color: #A78BFA;
+        }
+        [data-theme="dark"] .chart-bar-super {
+            background: linear-gradient(180deg, #A78BFA, #7C3AED);
+        }
+        .super-card {
+            background: linear-gradient(135deg, #6D28D9, #8B5CF6);
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">SUPER ADMIN</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="super-admin.html" class="active">👑 Dashboard</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background: linear-gradient(135deg, #4C1D95, #6D28D9);">
+        <div class="page-hero-inner">
+            <h1>👑 Super Admin Dashboard</h1>
+            <p>Complete overview of all clinics - Last 30 Days</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <!-- Overview Cards -->
+            <div class="grid-4" style="margin-bottom:24px;">
+                <div class="stat-card super-card">
+                    <div class="stat-icon" style="background:rgba(255,255,255,0.2);">🏥</div>
+                    <div class="stat-value" id="statClinics" style="color:white;">-</div>
+                    <div class="stat-label" style="color:rgba(255,255,255,0.8);">Total Clinics</div>
+                </div>
+                <div class="stat-card super-card">
+                    <div class="stat-icon" style="background:rgba(255,255,255,0.2);">👨‍⚕️</div>
+                    <div class="stat-value" id="statDoctors" style="color:white;">-</div>
+                    <div class="stat-label" style="color:rgba(255,255,255,0.8);">Total Doctors</div>
+                </div>
+                <div class="stat-card super-card">
+                    <div class="stat-icon" style="background:rgba(255,255,255,0.2);">👥</div>
+                    <div class="stat-value" id="statPatients" style="color:white;">-</div>
+                    <div class="stat-label" style="color:rgba(255,255,255,0.8);">Total Patients</div>
+                </div>
+                <div class="stat-card super-card">
+                    <div class="stat-icon" style="background:rgba(255,255,255,0.2);">📊</div>
+                    <div class="stat-value" id="statRate" style="color:white;">-</div>
+                    <div class="stat-label" style="color:rgba(255,255,255,0.8);">Absent Rate</div>
+                </div>
+            </div>
+
+            <!-- Daily Chart -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-header"><h3>📈 Daily Patients (Last 30 Days)</h3></div>
+                <div class="card-body">
+                    <div class="chart-container-super" id="dailyChart"></div>
+                </div>
+            </div>
+
+            <!-- Clinic Performance Table -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-header"><h3>🏥 Clinic Performance</h3></div>
+                <div class="card-body" id="clinicTable" style="max-height:500px;overflow-y:auto;"></div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header"><h3>📋 Recent Activity</h3></div>
+                <div class="card-body" id="recentTable" style="max-height:400px;overflow-y:auto;"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. All rights reserved.</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Check super admin access
+        function checkSuperAdmin() {
+            const user = AuthStore.getCurrentUser();
+            if (!user || user.user_type !== 'admin') {
+                alert('Access denied. Super admin only.');
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        async function loadAll() {
+            if (!checkSuperAdmin()) return;
+            await Promise.all([
+                loadOverview(),
+                loadDaily(),
+                loadClinics(),
+                loadRecent()
+            ]);
+        }
+
+        async function loadOverview() {
+            try {
+                const res = await fetch(`${API_BASE}/super-admin/overview`);
+                const data = await res.json();
+                document.getElementById('statClinics').textContent = data.total_clinics;
+                document.getElementById('statDoctors').textContent = data.total_doctors;
+                document.getElementById('statPatients').textContent = data.total_patients;
+                document.getElementById('statRate').textContent = data.absent_rate + '%';
+            } catch(e) {}
+        }
+
+        async function loadDaily() {
+            try {
+                const res = await fetch(`${API_BASE}/super-admin/daily-stats`);
+                const data = await res.json();
+                const maxVal = Math.max(...data.map(d => d.total), 1);
+                
+                document.getElementById('dailyChart').innerHTML = data.map(d => `
+                    <div class="chart-item-super">
+                        <div class="chart-value-super">${d.total}</div>
+                        <div class="chart-bar-super" style="height:${(d.total/maxVal)*130}px;"></div>
+                        <div class="chart-label-super">${d.day}</div>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function loadClinics() {
+            try {
+                const res = await fetch(`${API_BASE}/super-admin/clinic-performance`);
+                const data = await res.json();
+                
+                document.getElementById('clinicTable').innerHTML = data.length === 0 ?
+                    '<p style="color:var(--text-light);">No data</p>' :
+                    `<table style="width:100%;border-collapse:collapse;">
+                        <tr style="border-bottom:2px solid var(--border);">
+                            <th style="text-align:left;padding:10px;">Clinic</th>
+                            <th style="text-align:center;padding:10px;">Total</th>
+                            <th style="text-align:center;padding:10px;">Completed</th>
+                            <th style="text-align:center;padding:10px;">Absent</th>
+                            <th style="text-align:center;padding:10px;">Waiting</th>
+                            <th style="text-align:center;padding:10px;">Rate</th>
+                        </tr>
+                        ${data.map(c => `
+                            <tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:10px;"><strong>${c.emoji} ${c.name}</strong></td>
+                                <td style="text-align:center;padding:10px;">${c.total}</td>
+                                <td style="text-align:center;padding:10px;color:var(--success);">${c.completed}</td>
+                                <td style="text-align:center;padding:10px;color:var(--danger);">${c.absent}</td>
+                                <td style="text-align:center;padding:10px;color:var(--warning);">${c.waiting}</td>
+                                <td style="text-align:center;padding:10px;">
+                                    <span class="badge ${c.completion_rate>=80?'badge-success':c.completion_rate>=50?'badge-warning':'badge-danger'}">${c.completion_rate}%</span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </table>`;
+            } catch(e) {}
+        }
+
+        async function loadRecent() {
+            try {
+                const res = await fetch(`${API_BASE}/super-admin/recent`);
+                const data = await res.json();
+                
+                document.getElementById('recentTable').innerHTML = data.length === 0 ?
+                    '<p style="color:var(--text-light);">No recent activity</p>' :
+                    data.map(a => `
+                        <div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);">
+                            <div>
+                                <strong>${a.patient_name}</strong>
+                                <span style="color:var(--text-light);font-size:0.85rem;"> | ${a.clinic_name} | ${a.doctor_name}</span>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <span style="font-size:0.8rem;color:var(--text-light);">${a.appointment_date} ${a.time_slot}</span>
+                                ${getStatusBadge(a.status)}
+                            </div>
+                        </div>
+                    `).join('');
+            } catch(e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAll);
+    </script>
+</body>
+</html>
