@@ -10,7 +10,7 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="index.html" class="nav-brand">
-              <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px; width:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.2); padding:3px; background:white;">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
                 <div>
                     <div class="brand-name">Apna Bhagalpur</div>
                     <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
@@ -68,6 +68,7 @@
                             <button class="btn btn-success btn-block" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
                             <button class="btn btn-warning btn-block" id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
                             <button class="btn btn-outline btn-block" id="lockBtn" onclick="toggleLock()" style="margin-top:12px;">🔒 Lock Queue</button>
+                            <button class="btn btn-block" onclick="showModal('notifyModal')" style="margin-top:12px;background:#25D366;color:white;border:none;">📢 Notify All Patients</button>
                             <a href="admin-analytics.html" class="btn btn-outline btn-block" style="margin-top:12px;">📊 View Analytics</a>
                         </div>
                     </div>
@@ -90,6 +91,7 @@
         </div>
     </section>
 
+    <!-- Walk-in Modal -->
     <div class="modal-overlay hidden" id="walkinModal">
         <div class="modal">
             <div class="modal-header"><h3>🚶 Add Walk-in</h3><button class="modal-close" onclick="hideModal('walkinModal')">×</button></div>
@@ -107,6 +109,7 @@
         </div>
     </div>
 
+    <!-- Absent Modal -->
     <div class="modal-overlay hidden" id="absentModal">
         <div class="modal">
             <div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
@@ -114,6 +117,36 @@
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button>
                 <button class="btn btn-danger" onclick="markAbsent()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notify Modal -->
+    <div class="modal-overlay hidden" id="notifyModal">
+        <div class="modal">
+            <div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div>
+            <div class="modal-body">
+                <p style="margin-bottom:12px;">Send message to <strong id="notifyCount">0</strong> patients for <strong id="notifyDate"></strong></p>
+                <div class="form-group">
+                    <label class="form-label">Message Template</label>
+                    <select class="form-control" id="msgTemplate" onchange="setTemplate()">
+                        <option value="">Select template...</option>
+                        <option value="Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.">🚨 Emergency - Doctor Unavailable</option>
+                        <option value="Doctor is running 1 hour late today. Please plan accordingly. Sorry for the delay.">⏰ Doctor Running Late</option>
+                        <option value="Clinic is closed today due to unforeseen circumstances. Please visit tomorrow.">🏥 Clinic Closed Today</option>
+                        <option value="Your appointment is confirmed for today. Please arrive on time.">✅ Appointment Reminder</option>
+                        <option value="custom">✏️ Custom Message</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message *</label>
+                    <textarea class="form-control" id="notifyMessage" rows="3" placeholder="Type your message here...">Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.</textarea>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-light);">This will open WhatsApp for each patient. You need to click send for each.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="hideModal('notifyModal')">Cancel</button>
+                <button class="btn" style="background:#25D366;color:white;" onclick="sendBulkWhatsApp()">📱 Send to All</button>
             </div>
         </div>
     </div>
@@ -145,11 +178,9 @@
                 window.location.href = 'login.html';
                 return;
             }
-            
             currentClinicId = user.clinic_id;
             document.getElementById('adminClinicName').value = '🏥 ' + (user.clinic_name || 'Your Clinic');
             document.getElementById('dashboardContent').style.display = 'block';
-            
             loadDoctors();
             loadDashboard();
         }
@@ -164,10 +195,7 @@
         }
 
         document.getElementById('adminDate').addEventListener('change', function() {
-            if (currentClinicId) {
-                seconds = 0;
-                loadDashboard();
-            }
+            if (currentClinicId) { seconds = 0; loadDashboard(); }
         });
 
         async function loadDashboard() {
@@ -207,7 +235,7 @@
                     <div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='current'?'background:#fefce8;':''}${a.status==='absent'?'text-decoration:line-through;opacity:0.6;':''}">
                         <div>
                             <strong>#${a.slot_number}</strong> - ${a.patient_name}
-                            <div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name || 'N/A'} | 🕐 ${a.time_slot}</div>
+                            <div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name || 'N/A'} | 🕐 ${a.time_slot} | 📞 ${a.phone || 'N/A'}</div>
                         </div>
                         <div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div>
                     </div>
@@ -288,15 +316,8 @@
                 const result = await API.togglePause(currentClinicId);
                 isPaused = result.is_paused;
                 const btn = document.getElementById('pauseBtn');
-                if (isPaused) {
-                    btn.textContent = '▶️ Resume';
-                    btn.className = 'btn btn-success btn-block';
-                    clearInterval(timerInterval);
-                } else {
-                    btn.textContent = '⏸️ Pause';
-                    btn.className = 'btn btn-warning btn-block';
-                    startTimer();
-                }
+                if (isPaused) { btn.textContent = '▶️ Resume'; btn.className = 'btn btn-success btn-block'; clearInterval(timerInterval); }
+                else { btn.textContent = '⏸️ Pause'; btn.className = 'btn btn-warning btn-block'; startTimer(); }
             } catch(e) {}
         }
 
@@ -314,6 +335,48 @@
                 await loadDashboard();
             } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
+
+        // 📢 WhatsApp Notification Functions
+        function setTemplate() {
+            const val = document.getElementById('msgTemplate').value;
+            if (val && val !== 'custom') {
+                document.getElementById('notifyMessage').value = val;
+            }
+        }
+
+        function prepareNotify() {
+            const today = getSelectedDate() || new Date().toISOString().split('T')[0];
+            document.getElementById('notifyDate').textContent = today;
+            const patients = dashboardData?.appointments || [];
+            const waitingPatients = patients.filter(a => a.status === 'waiting' || a.status === 'current');
+            document.getElementById('notifyCount').textContent = waitingPatients.length;
+        }
+
+        function sendBulkWhatsApp() {
+            const message = encodeURIComponent(document.getElementById('notifyMessage').value);
+            const patients = dashboardData?.appointments || [];
+            const waitingPatients = patients.filter(a => a.status === 'waiting' || a.status === 'current');
+            
+            if (waitingPatients.length === 0) { showToast('Info', 'No patients to notify', 'info'); return; }
+            
+            waitingPatients.forEach((p, i) => {
+                setTimeout(() => {
+                    if (p.patient_phone && p.patient_phone.length === 10) {
+                        window.open(`https://wa.me/91${p.patient_phone}?text=${message}`, '_blank');
+                    }
+                }, i * 1000);
+            });
+            
+            hideModal('notifyModal');
+            showToast('Sent!', `Opening WhatsApp for ${waitingPatients.length} patients`, 'success');
+        }
+
+        // Override showModal for notify
+        const originalShowModal = showModal;
+        showModal = function(id) {
+            if (id === 'notifyModal') prepareNotify();
+            originalShowModal(id);
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('adminDate').value = new Date().toISOString().split('T')[0];
