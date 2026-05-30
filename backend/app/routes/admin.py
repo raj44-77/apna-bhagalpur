@@ -88,51 +88,56 @@ async def mark_absent(clinic_id: int, appointment_date: str = None, db: Session 
 
 @router.post("/add-walkin/{clinic_id}")
 async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", appointment_date: str = None, db: Session = Depends(get_db)):
-    today = appointment_date if appointment_date else str(date.today())
-    
-    count = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date == today
-    ).count()
-    
-    slot_num = count + 1
-    booking_id = f"WLK{clinic_id}{today.replace('-','')}{slot_num:03d}"
-    
-    appointment = Appointment(
-        booking_id=booking_id,
-        clinic_id=clinic_id,
-        doctor_id=doctor_id,
-        patient_name=patient_name,
-        patient_phone=patient_phone or "",
-        appointment_date=today,
-        time_slot=datetime.now().strftime("%I:%M %p"),
-        slot_number=slot_num,
-        booking_type="walkin",
-        status="waiting"
-    )
-    
-    db.add(appointment)
-    
-    queue = db.query(QueueState).filter(
-        QueueState.clinic_id == clinic_id,
-        QueueState.appointment_date == today
-    ).first()
-    if not queue:
-        queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0)
-        db.add(queue)
-    queue.total_walkins += 1
-    
-    db.commit()
-    db.refresh(appointment)
-    
-    await broadcast(clinic_id, {
-        "action": "add_walkin",
-        "slot": appointment.slot_number,
-        "patient": patient_name,
-        "message": f"Walk-in added: {patient_name}"
-    })
-    
-    return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
+    try:
+        today = appointment_date if appointment_date else str(date.today())
+        
+        count = db.query(Appointment).filter(
+            Appointment.clinic_id == clinic_id,
+            Appointment.appointment_date == today
+        ).count()
+        
+        slot_num = count + 1
+        booking_id = f"WLK{clinic_id}{today.replace('-','')}{slot_num:03d}"
+        
+        appointment = Appointment(
+            booking_id=booking_id,
+            clinic_id=clinic_id,
+            doctor_id=doctor_id,
+            patient_name=patient_name,
+            patient_phone=patient_phone or "",
+            appointment_date=today,
+            time_slot=datetime.now().strftime("%I:%M %p"),
+            slot_number=slot_num,
+            booking_type="walkin",
+            status="waiting"
+        )
+        
+        db.add(appointment)
+        
+        queue = db.query(QueueState).filter(
+            QueueState.clinic_id == clinic_id,
+            QueueState.appointment_date == today
+        ).first()
+        if not queue:
+            queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=today, current_slot_number=0)
+            db.add(queue)
+            db.flush()
+        
+        queue.total_walkins += 1
+        db.commit()
+        db.refresh(appointment)
+        
+        await broadcast(clinic_id, {
+            "action": "add_walkin",
+            "slot": appointment.slot_number,
+            "patient": patient_name,
+            "message": f"Walk-in added: {patient_name}"
+        })
+        
+        return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/dashboard/{clinic_id}")
