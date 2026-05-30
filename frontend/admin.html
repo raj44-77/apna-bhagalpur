@@ -92,7 +92,6 @@
         </div>
     </section>
 
-    <!-- Walk-in Modal -->
     <div class="modal-overlay hidden" id="walkinModal">
         <div class="modal">
             <div class="modal-header"><h3>🚶 Add Walk-in</h3><button class="modal-close" onclick="hideModal('walkinModal')">×</button></div>
@@ -110,7 +109,6 @@
         </div>
     </div>
 
-    <!-- Absent Modal -->
     <div class="modal-overlay hidden" id="absentModal">
         <div class="modal">
             <div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
@@ -122,7 +120,6 @@
         </div>
     </div>
 
-    <!-- Notify Modal -->
     <div class="modal-overlay hidden" id="notifyModal">
         <div class="modal">
             <div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div>
@@ -302,39 +299,26 @@
             const name = document.getElementById('walkinName').value.trim();
             const phone = document.getElementById('walkinPhone').value.trim();
             const doctorId = parseInt(document.getElementById('walkinDoctor').value);
+            
             if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
+            if (!currentClinicId) { showToast('Error', 'No clinic selected', 'error'); return; }
+            
             try {
-                async function addWalkIn() {
-    if (!currentClinicId) { showToast('Error', 'No clinic selected', 'error'); return; }
-    
-    const name = document.getElementById('walkinName').value.trim();
-    const phone = document.getElementById('walkinPhone').value.trim();
-    const doctorId = parseInt(document.getElementById('walkinDoctor').value);
-    
-    if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; }
-    
-    try {
-        const result = await API.addWalkin(currentClinicId, { 
-            clinic_id: currentClinicId, 
-            doctor_id: doctorId, 
-            patient_name: name, 
-            patient_phone: phone || '' 
-        }, getSelectedDate());
-        
-        hideModal('walkinModal');
-        document.getElementById('walkinForm').reset();
-        showToast('Added', `${name} added to queue`, 'success');
-        await loadDashboard();
-    } catch(e) { 
-        console.error('Walk-in error:', e);
-        showToast('Error', 'Failed to add walk-in', 'error'); 
-    }
-}
+                const result = await API.addWalkin(currentClinicId, { 
+                    doctor_id: doctorId, 
+                    patient_name: name, 
+                    patient_phone: phone || '' 
+                }, getSelectedDate());
+                
+                console.log('Walk-in result:', result);
                 hideModal('walkinModal');
                 document.getElementById('walkinForm').reset();
                 showToast('Added', `${name} added to queue`, 'success');
                 await loadDashboard();
-            } catch(e) { showToast('Error', 'Failed', 'error'); }
+            } catch(e) { 
+                console.error('Walk-in error:', e);
+                showToast('Error', 'Failed to add walk-in', 'error'); 
+            }
         }
 
         async function togglePause() {
@@ -362,7 +346,6 @@
             } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
-        // 📢 WhatsApp Notification Functions
         function setTemplate() {
             const val = document.getElementById('msgTemplate').value;
             if (val && val !== 'custom') {
@@ -382,9 +365,7 @@
             const message = encodeURIComponent(document.getElementById('notifyMessage').value);
             const patients = dashboardData?.appointments || [];
             const waitingPatients = patients.filter(a => a.status === 'waiting' || a.status === 'current');
-            
             if (waitingPatients.length === 0) { showToast('Info', 'No patients to notify', 'info'); return; }
-            
             waitingPatients.forEach((p, i) => {
                 setTimeout(() => {
                     if (p.patient_phone && p.patient_phone.length === 10) {
@@ -392,76 +373,27 @@
                     }
                 }, i * 1000);
             });
-            
             hideModal('notifyModal');
             showToast('Sent!', `Opening WhatsApp for ${waitingPatients.length} patients`, 'success');
         }
 
-        // 📥 Download PDF Function
         function downloadPDF() {
             const apps = dashboardData?.appointments || [];
             if (apps.length === 0) { showToast('Info', 'No appointments to download', 'info'); return; }
-            
             const clinicName = document.getElementById('adminClinicName').value || 'Clinic';
             const today = getSelectedDate() || new Date().toISOString().split('T')[0];
-            
-            let html = `
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>${clinicName} - Queue for ${today}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    h1 { color: #1E40AF; border-bottom: 2px solid #1E40AF; padding-bottom: 10px; }
-                    h3 { color: #666; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th { background: #1E40AF; color: white; padding: 10px; text-align: left; }
-                    td { padding: 10px; border-bottom: 1px solid #ddd; }
-                    .status-completed { color: green; font-weight: bold; }
-                    .status-waiting { color: orange; font-weight: bold; }
-                    .status-current { color: blue; font-weight: bold; }
-                    .status-absent { color: red; font-weight: bold; text-decoration: line-through; }
-                    .footer { margin-top: 30px; font-size: 12px; color: #999; text-align: center; }
-                </style>
-            </head>
-            <body>
-                <h1>${clinicName}</h1>
-                <h3>📋 Queue for ${today} | Total: ${apps.length} patients</h3>
-                <table>
-                    <tr><th>Slot</th><th>Patient Name</th><th>Phone</th><th>Time</th><th>Type</th><th>Status</th></tr>
-            `;
-            
-            apps.forEach(a => {
-                html += `
-                    <tr>
-                        <td>#${a.slot_number}</td>
-                        <td>${a.patient_name}</td>
-                        <td>${a.patient_phone || 'N/A'}</td>
-                        <td>${a.time_slot}</td>
-                        <td>${a.booking_type}</td>
-                        <td class="status-${a.status}">${a.status}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                </table>
-                <div class="footer">
-                    <p>Generated by Apna Bhagalpur | ${new Date().toLocaleString()}</p>
-                    <p>Emergency offline queue copy</p>
-                </div>
-            </body>
-            </html>
-            `;
-            
+            let html = `<html><head><meta charset="UTF-8"><title>${clinicName} - ${today}</title>
+                <style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#1E40AF;border-bottom:2px solid #1E40AF;padding-bottom:10px}h3{color:#666}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#1E40AF;color:white;padding:10px;text-align:left}td{padding:10px;border-bottom:1px solid #ddd}.footer{margin-top:30px;font-size:12px;color:#999;text-align:center}</style></head>
+                <body><h1>${clinicName}</h1><h3>Queue for ${today} | Total: ${apps.length} patients</h3>
+                <table><tr><th>Slot</th><th>Patient</th><th>Phone</th><th>Time</th><th>Type</th><th>Status</th></tr>`;
+            apps.forEach(a => { html += `<tr><td>#${a.slot_number}</td><td>${a.patient_name}</td><td>${a.patient_phone||'N/A'}</td><td>${a.time_slot}</td><td>${a.booking_type}</td><td>${a.status}</td></tr>`; });
+            html += `</table><div class="footer"><p>Apna Bhagalpur | ${new Date().toLocaleString()}</p></div></body></html>`;
             const win = window.open('', '_blank', 'width=800,height=600');
-            win.document.write(html);
-            win.document.close();
+            win.document.write(html); win.document.close();
             setTimeout(() => { win.print(); }, 500);
-            showToast('Downloaded', 'PDF is ready! Save or print it.', 'success');
+            showToast('Downloaded', 'PDF ready!', 'success');
         }
 
-        // Override showModal for notify
         const originalShowModal = showModal;
         showModal = function(id) {
             if (id === 'notifyModal') prepareNotify();
