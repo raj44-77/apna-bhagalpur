@@ -110,6 +110,7 @@ function checkAuth() {
     
     return true;
 }
+
 function updateAuthUI() {
     const user = AuthStore.getCurrentUser();
     const navLinks = document.querySelector('.nav-links');
@@ -146,21 +147,17 @@ function updateAuthUI() {
     if (!authArea) {
         authArea = document.createElement('div');
         authArea.className = 'auth-area';
-        authArea.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:16px;';
+        authArea.style.cssText = 'display:flex;align-items:center;gap:8px;';
         navLinks.appendChild(authArea);
     }
 
     if (user) {
         const typeLabel = user.user_type === 'admin' ? '👑' : user.user_type === 'clinic' ? '🏥' : '👤';
-        authArea.innerHTML = `
-            <span style="font-size:0.85rem;">${typeLabel} ${user.name.split(' ')[0]}</span>
-            <a href="profile.html" class="btn btn-sm btn-outline">👤 Profile</a>
-            <button onclick="logoutUser()" class="btn btn-sm btn-outline" style="color:var(--danger);">🚪 Logout</button>
-        `;
+        authArea.innerHTML = '<span style="font-size:0.85rem;">' + typeLabel + ' ' + user.name.split(' ')[0] + '</span>' +
+            '<a href="profile.html" class="btn btn-sm btn-outline">👤 Profile</a>' +
+            '<button onclick="logoutUser()" class="btn btn-sm btn-outline" style="color:var(--danger);">🚪 Logout</button>';
     } else {
-        authArea.innerHTML = `
-            <a href="login.html" class="btn btn-sm btn-outline">🔑 Login</a>
-            <a href="signup.html" class="btn btn-sm btn-primary">📝 Sign Up</a>
-        `;
+        authArea.innerHTML = '<a href="login.html" class="btn btn-sm btn-outline">🔑 Login</a>' +
+            '<a href="signup.html" class="btn btn-sm btn-primary">📝 Sign Up</a>';
     }
 }
