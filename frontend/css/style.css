@@ -962,3 +962,53 @@ html {
         display: none;
     }
 }
+
+/* ============================================
+   NAVBAR DARK MODE FIXES
+   ============================================ */
+
+[data-theme="dark"] .navbar {
+    background: #0F172A;
+    border-bottom: 1px solid #1E293B;
+}
+
+[data-theme="dark"] .nav-links a {
+    color: #CBD5E1;
+}
+
+[data-theme="dark"] .nav-links a:hover {
+    background: #1E293B;
+    color: #60A5FA;
+}
+
+[data-theme="dark"] .nav-links a.active {
+    background: #1E293B;
+    color: #60A5FA;
+}
+
+[data-theme="dark"] .nav-links a.btn-nav {
+    background: #3B82F6;
+    color: white;
+}
+
+[data-theme="dark"] .nav-links a.btn-nav:hover {
+    background: #2563EB;
+    color: white;
+}
+
+[data-theme="dark"] .hamburger span {
+    background: #CBD5E1;
+}
+
+[data-theme="dark"] .nav-brand .brand-name {
+    color: #F1F5F9;
+}
+
+[data-theme="dark"] .nav-brand .brand-sub {
+    color: #94A3B8;
+}
+
+[data-theme="dark"] .nav-links.open {
+    background: #0F172A;
+    border-bottom: 1px solid #1E293B;
+}
