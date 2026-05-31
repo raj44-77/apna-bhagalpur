@@ -400,6 +400,10 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #1E293B; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
 [data-theme="dark"] .divider { background: #334155; }
+[data-theme="dark"] section[style*="background: white"] 
+[data-theme="dark"] section[style*="background"] {
+    background-color: #0F172A !important;
+}    
 
 /* ===== THEME TOGGLE ===== */
 .theme-toggle { position: fixed; bottom: 24px; right: 24px; width: 50px; height: 50px; border-radius: 50%; background: var(--primary); color: white; border: none; cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(30,64,175,0.4); transition: all 0.3s cubic-bezier(0.4,0,0.2,1); z-index: 999; }
