@@ -835,3 +835,130 @@ html {
 .badge:hover {
     transform: scale(1.05);
 }
+
+/* ============================================
+   IMPROVED NAVBAR
+   ============================================ */
+
+.nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    gap: 16px;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-mid);
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.nav-links a:hover {
+    background: var(--secondary);
+    color: var(--primary);
+}
+
+.nav-links a.active {
+    background: var(--secondary);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.nav-links a.btn-nav {
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    font-weight: 600;
+}
+
+.nav-links a.btn-nav:hover {
+    background: var(--primary-dark);
+    color: white;
+}
+
+/* Auth area in navbar */
+.auth-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+}
+
+.auth-area .btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+/* Mobile navbar */
+@media (max-width: 900px) {
+    .nav-inner {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 16px;
+    }
+    
+    .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        padding: 12px 0;
+        gap: 2px;
+    }
+    
+    .nav-links.open {
+        display: flex;
+    }
+    
+    .nav-links a {
+        width: 100%;
+        padding: 12px 16px;
+    }
+    
+    .hamburger {
+        display: flex;
+    }
+    
+    .auth-area {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+        margin-top: 8px;
+    }
+}
+
+@media (min-width: 901px) {
+    .hamburger {
+        display: none;
+    }
+}
