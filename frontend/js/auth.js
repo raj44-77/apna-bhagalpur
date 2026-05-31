@@ -110,7 +110,6 @@ function checkAuth() {
     
     return true;
 }
-
 function updateAuthUI() {
     const user = AuthStore.getCurrentUser();
     const navLinks = document.querySelector('.nav-links');
@@ -127,7 +126,7 @@ function updateAuthUI() {
         if (myBookingsLink) myBookingsLink.style.display = 'none';
         if (adminLink) adminLink.style.display = '';
     } else if (user && user.user_type === 'clinic') {
-        if (bookingLink) bookingLink.style.display = 'none';
+        if (bookingLink) bookingLink.style.display = '';
         if (trackingLink) trackingLink.style.display = 'none';
         if (myBookingsLink) myBookingsLink.style.display = 'none';
         if (adminLink) adminLink.style.display = '';
@@ -165,8 +164,3 @@ function updateAuthUI() {
         `;
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    updateAuthUI();
-});
