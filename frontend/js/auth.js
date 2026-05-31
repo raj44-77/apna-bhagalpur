@@ -143,16 +143,17 @@ function updateAuthUI() {
         if (adminLink) adminLink.style.display = '';
     }
 
-    let authArea = navLinks.querySelector('.auth-area');
-    if (!authArea) {
-        authArea = document.createElement('div');
-        authArea.className = 'auth-area';
-        authArea.style.cssText = 'display:flex;align-items:center;gap:8px;';
-        navLinks.appendChild(authArea);
-    }
+    // Remove existing auth area
+    const existingAuth = navLinks.querySelector('.auth-area');
+    if (existingAuth) existingAuth.remove();
+
+    // Create auth area
+    const authArea = document.createElement('div');
+    authArea.className = 'auth-area';
+    authArea.style.cssText = 'display:flex;align-items:center;gap:8px;margin-left:8px;';
 
     if (user) {
-        const typeLabel = user.user_type === 'admin' ? '👑' : user.user_type === 'clinic' ? '🏥' : '👤';
+        const typeLabel = user.user_type === 'admin' ? '👑' : (user.user_type === 'clinic' ? '🏥' : '👤');
         authArea.innerHTML = '<span style="font-size:0.85rem;">' + typeLabel + ' ' + user.name.split(' ')[0] + '</span>' +
             '<a href="profile.html" class="btn btn-sm btn-outline">👤 Profile</a>' +
             '<button onclick="logoutUser()" class="btn btn-sm btn-outline" style="color:var(--danger);">🚪 Logout</button>';
@@ -160,4 +161,11 @@ function updateAuthUI() {
         authArea.innerHTML = '<a href="login.html" class="btn btn-sm btn-outline">🔑 Login</a>' +
             '<a href="signup.html" class="btn btn-sm btn-primary">📝 Sign Up</a>';
     }
+
+    navLinks.appendChild(authArea);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    updateAuthUI();
+});
