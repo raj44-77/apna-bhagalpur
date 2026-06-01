@@ -10,7 +10,7 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="index.html" class="nav-brand">
-                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px; width:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.2); padding:3px; background:white;">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
                 <div>
                     <div class="brand-name">Apna Bhagalpur</div>
                     <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
@@ -131,34 +131,30 @@
     <script>
         let currentTracking = null;
         let ws = null;
+
         async function populateClinics() {
-    const select = document.getElementById('clinicSelect');
-    try {
-        const clinics = await API.getClinics();
-        clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
-    } catch(e) {
-        CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
-    }
-    const urlParams = new URLSearchParams(window.location.search);
-    const clinicId = urlParams.get('clinic');
-    const slotNum = urlParams.get('slot');
-    if (clinicId) document.getElementById('clinicSelect').value = clinicId;
-    if (slotNum) document.getElementById('slotInput').value = slotNum;
-    if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
-}
+            const select = document.getElementById('clinicSelect');
+            try {
+                const clinics = await API.getClinics();
+                clinics.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            } catch(e) {
+                CLINICS.forEach(c => select.innerHTML += `<option value="${c.id}">${c.emoji} ${c.name}</option>`);
+            }
+            const urlParams = new URLSearchParams(window.location.search);
+            const clinicId = urlParams.get('clinic');
+            const slotNum = urlParams.get('slot');
+            if (clinicId) document.getElementById('clinicSelect').value = clinicId;
+            if (slotNum) document.getElementById('slotInput').value = slotNum;
+            if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
+        }
 
         function connectWebSocket(clinicId) {
             if (ws) { ws.close(); }
             document.getElementById('wsIndicator').innerHTML = '🟡 Connecting...';
-            
-            // Auto-detect WebSocket URL for local or production
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const wsUrl = isLocal 
-                ? `ws://localhost:8000/ws/${clinicId}`
-                : `wss://apna-bhagalpur.onrender.com/ws/${clinicId}`;
-            
+            const wsUrl = isLocal ? `ws://localhost:8000/ws/${clinicId}` : `wss://apna-bhagalpur.onrender.com/ws/${clinicId}`;
             ws = new WebSocket(wsUrl);
-            ws.onopen = () => { console.log('🟢 Live!'); document.getElementById('wsIndicator').innerHTML = '🟢 Live updates active'; };
+            ws.onopen = () => { document.getElementById('wsIndicator').innerHTML = '🟢 Live updates active'; };
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
                 if (msg.type === 'queue_update') { updateTrackingDisplay(); showToast('🔔 Update', msg.data.message, 'info'); }
@@ -190,9 +186,15 @@
                 document.getElementById('currentSlot').textContent = `#${data.current_slot}`;
                 document.getElementById('yourSlot').textContent = `#${data.your_slot}`;
                 document.getElementById('queueAhead').textContent = data.queue_ahead;
-                const progress = Math.min(100, Math.round((data.current_slot / 10) * 100));
+
+                // Fixed progress bar - uses actual queue size
+                const qd = await API.getQueueStatus(currentTracking.clinicId);
+                const totalSlots = (qd.appointments || []).length || 1;
+                const progress = Math.min(100, Math.round((data.current_slot / totalSlots) * 100));
                 const pf = document.getElementById('progressFill');
-                pf.style.width = progress + '%'; pf.textContent = progress + '%';
+                pf.style.width = progress + '%';
+                pf.textContent = progress + '%';
+
                 document.getElementById('waitTime').textContent = data.estimated_wait_string || '--';
                 document.getElementById('waitDetail').textContent = `${data.queue_ahead} patient(s) ahead`;
 
@@ -201,10 +203,9 @@
                 else if (data.alert_type === 'warning') sd.innerHTML = `<div class="badge badge-warning pulse" style="font-size:1rem;">🔔 ${data.status_message}</div>`;
                 else sd.innerHTML = `<div class="badge badge-primary" style="font-size:1rem;">⏳ ${data.status_message}</div>`;
 
-                const qd = await API.getQueueStatus(currentTracking.clinicId);
                 document.getElementById('queueList').innerHTML = (qd.appointments || []).map(a => `
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}${a.slot_number===data.current_slot&&a.status==='current'?'background:#fefce8;':''}">
-                        <div><strong>#${a.slot_number}</strong> - ${a.patient_name.split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
+                        <div><strong>#${a.slot_number}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
                         <div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div>
                     </div>
                 `).join('');
