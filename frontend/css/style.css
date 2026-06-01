@@ -422,9 +422,11 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 [data-theme="dark"] .nav-links.open { background: #0F172A; border-bottom: 1px solid #1E293B; }
 [data-theme="dark"] section[style*="background"] { background-color: #0F172A !important; }
 [data-theme="dark"] .divider { background: #334155; }
+[data-theme="dark"] #adminQueueList > div[style*="background: #fefce8"] {
+    background: #1E3A8A !important;
+}
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #1E293B; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
-
 /* ===== MOBILE AUTH BUTTONS FIX ===== */
 @media (max-width: 600px) {
     .auth-area {
