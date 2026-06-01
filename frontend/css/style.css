@@ -424,21 +424,26 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 [data-theme="dark"] .divider { background: #334155; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #1E293B; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
-
 /* ===== MOBILE AUTH BUTTONS FIX ===== */
 @media (max-width: 600px) {
     .auth-area {
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-    .auth-area .btn {
-        padding: 5px 8px;
-        font-size: 0.72rem;
+        flex-wrap: nowrap;
+        gap: 6px;
+        width: auto;
     }
     .auth-area span {
-        font-size: 0.72rem;
-        width: 100%;
+        display: none;
+    }
+    .auth-area .btn {
+        padding: 7px 12px;
+        font-size: 0.75rem;
+        flex: 1;
         text-align: center;
-        margin-bottom: 2px;
+        white-space: nowrap;
+    }
+    .auth-area a.btn,
+    .auth-area button.btn {
+        flex: 1;
+        min-width: 0;
     }
 }
