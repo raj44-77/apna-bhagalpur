@@ -424,6 +424,7 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 [data-theme="dark"] .divider { background: #334155; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #1E293B; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
+
 /* ===== MOBILE AUTH BUTTONS FIX ===== */
 @media (max-width: 600px) {
     .auth-area {
@@ -448,18 +449,15 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
     }
 }
 
+/* ===== MOBILE BOOKING CONFIRMATION BUTTONS ===== */
 @media (max-width: 600px) {
-    #confirmationCard .btn {
-        font-size: 0.75rem;
-        padding: 10px 8px;
-        white-space: normal;
+    #confirmationCard a.btn,
+    #confirmationCard button.btn {
+        width: 100% !important;
+        font-size: 0.78rem !important;
+        padding: 12px 10px !important;
+        white-space: normal !important;
         word-break: break-word;
-    }
-    #confirmationCard > .card-body > div:last-child {
-        flex-direction: column;
-        gap: 8px;
-    }
-    #confirmationCard > .card-body > div:last-child .btn {
-        width: 100%;
+        text-align: center;
     }
 }
