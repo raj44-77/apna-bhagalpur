@@ -447,3 +447,19 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
         min-width: 0;
     }
 }
+
+@media (max-width: 600px) {
+    #confirmationCard .btn {
+        font-size: 0.75rem;
+        padding: 10px 8px;
+        white-space: normal;
+        word-break: break-word;
+    }
+    #confirmationCard > .card-body > div:last-child {
+        flex-direction: column;
+        gap: 8px;
+    }
+    #confirmationCard > .card-body > div:last-child .btn {
+        width: 100%;
+    }
+}
