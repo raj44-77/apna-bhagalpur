@@ -424,3 +424,21 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 [data-theme="dark"] .divider { background: #334155; }
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #1E293B; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
+
+/* ===== MOBILE AUTH BUTTONS FIX ===== */
+@media (max-width: 600px) {
+    .auth-area {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .auth-area .btn {
+        padding: 5px 8px;
+        font-size: 0.72rem;
+    }
+    .auth-area span {
+        font-size: 0.72rem;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 2px;
+    }
+}
