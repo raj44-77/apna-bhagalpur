@@ -353,7 +353,6 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .pulse { animation: pulse 2s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -369,6 +368,15 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
   .page-hero h1 { font-size: 1.5rem; }
   .modal-footer { flex-direction: column; }
   .modal-footer .btn { width: 100%; justify-content: center; }
+}
+
+/* ===== CURRENT ROW HIGHLIGHT ===== */
+.current-row {
+    background: #fefce8;
+}
+
+[data-theme="dark"] .current-row {
+    background: #1E3A8A !important;
 }
 
 /* ===== THEME TOGGLE ===== */

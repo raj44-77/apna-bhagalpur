@@ -151,7 +151,7 @@
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
-            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div>
         </div>
     </footer>
 
@@ -189,7 +189,7 @@
             if (c && c.slot_number) { s.innerHTML = `<div style="text-align:center;"><div style="font-size:3rem;font-weight:700;color:var(--primary);">#${c.slot_number}</div><h3>${c.name}</h3><p>${c.time_slot||''}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; }
             else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; clearInterval(timerInterval); }
             const apps = dashboardData?.appointments || [];
-            document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map(a => `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='current'?'background:#fefce8;':''}"><div><strong>#${a.slot_number}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🕐 ${a.time_slot}</div></div><div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`).join('');
+            document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map(a => `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);"><div><strong>#${a.slot_number}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🕐 ${a.time_slot}</div></div><div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`).join('');
             const st = dashboardData?.stats || {}, q = dashboardData?.queue || {};
             document.getElementById('statProgress').textContent = `${st.completed||0}/${st.total||0}`;
             document.getElementById('statAbsent').textContent = st.absent || 0;
