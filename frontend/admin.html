@@ -63,6 +63,7 @@
                     <div class="card">
                         <div class="card-header"><h3>⚡ Actions</h3></div>
                         <div class="card-body">
+                            <button class="btn btn-info btn-block" id="startBtn" onclick="startConsultation()" style="margin-bottom:12px;background:#8B5CF6;color:white;border:none;display:none;">▶️ Start Consultation</button>
                             <button class="btn btn-primary btn-block" onclick="nextSlot()" style="margin-bottom:12px;">⏭️ Next Slot</button>
                             <button class="btn btn-danger btn-block" onclick="showModal('absentModal')" style="margin-bottom:12px;">❌ Mark Absent</button>
                             <button class="btn btn-success btn-block" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
@@ -159,7 +160,7 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        let currentClinicId = null, dashboardData = null, timerInterval = null, seconds = 0, isPaused = false;
+        let currentClinicId = null, dashboardData = null, timerInterval = null, seconds = 0, isPaused = false, consultationStarted = false;
 
         function getSelectedDate() { return document.getElementById('adminDate').value || null; }
 
@@ -176,18 +177,22 @@
             try { const doctors = await API.getDoctors(currentClinicId); const ds = document.getElementById('walkinDoctor'); ds.innerHTML = '<option value="">Select...</option>'; doctors.forEach(d => ds.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty}</option>`); } catch(e) {}
         }
 
-        document.getElementById('adminDate').addEventListener('change', function() { if (currentClinicId) { seconds = 0; loadDashboard(); } });
+        document.getElementById('adminDate').addEventListener('change', function() { if (currentClinicId) { seconds = 0; consultationStarted = false; stopTimer(); loadDashboard(); } });
 
         async function loadDashboard() {
             if (!currentClinicId) return;
-            try { dashboardData = await API.getDashboard(currentClinicId, getSelectedDate()); updateUI(); startTimer(); } catch(e) { showToast('Error', 'Failed', 'error'); }
+            try { dashboardData = await API.getDashboard(currentClinicId, getSelectedDate()); updateUI(); } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
         function updateUI() {
             const c = dashboardData?.current_patient;
             const s = document.getElementById('currentPatientSection');
-            if (c && c.slot_number) { s.innerHTML = `<div style="text-align:center;"><div style="font-size:3rem;font-weight:700;color:var(--primary);">#${c.slot_number}</div><h3>${c.name}</h3><p>${c.time_slot||''}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; }
-            else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; clearInterval(timerInterval); }
+            if (c && c.slot_number) { 
+                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3rem;font-weight:700;color:var(--primary);">#${c.slot_number}</div><h3>${c.name}</h3><p>${c.time_slot||''}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; 
+            } else { 
+                s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; 
+                stopTimer(); 
+            }
             const apps = dashboardData?.appointments || [];
             document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map(a => `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);"><div><strong>#${a.slot_number}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🕐 ${a.time_slot}</div></div><div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`).join('');
             const st = dashboardData?.stats || {}, q = dashboardData?.queue || {};
@@ -196,12 +201,47 @@
             document.getElementById('statWalkins').textContent = q.total_walkins || 0;
             const lb = document.getElementById('lockBtn');
             if (lb) { if (dashboardData?.is_locked) { lb.textContent = '🔓 Unlock Queue'; lb.className = 'btn btn-success btn-block'; } else { lb.textContent = '🔒 Lock Queue'; lb.className = 'btn btn-outline btn-block'; } lb.style.marginTop = '12px'; }
+            
+            // Show/hide Start button
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                if (c && c.slot_number && !consultationStarted && !timerInterval) {
+                    startBtn.style.display = 'block';
+                } else {
+                    startBtn.style.display = 'none';
+                }
+            }
         }
 
-        function startTimer() { clearInterval(timerInterval); if (dashboardData?.current_patient && !isPaused) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
+        function startConsultation() {
+            consultationStarted = true;
+            seconds = 0;
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.style.display = 'none';
+            startTimer();
+            showToast('Started', 'Consultation timer started', 'success');
+        }
 
-        async function nextSlot() { if (!currentClinicId) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function markAbsent() { if (!currentClinicId) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            consultationStarted = false;
+        }
+
+        function startTimer() { 
+            stopTimer(); 
+            if (dashboardData?.current_patient && !isPaused) { 
+                timerInterval = setInterval(() => { 
+                    seconds++; 
+                    const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); 
+                    const el = document.getElementById('timer'); 
+                    if (el) el.textContent = `${h}:${m}:${s2}`; 
+                }, 1000); 
+            } 
+        }
+
+        async function nextSlot() { if (!currentClinicId) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function markAbsent() { if (!currentClinicId) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         
         async function addWalkIn() {
             const name = document.getElementById('walkinName').value.trim(), phone = document.getElementById('walkinPhone').value.trim(), doctorId = parseInt(document.getElementById('walkinDoctor').value);
@@ -210,7 +250,7 @@
             try { const result = await API.addWalkin(currentClinicId, { doctor_id: doctorId, patient_name: name, patient_phone: phone || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${name} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
-        async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; clearInterval(timerInterval); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; startTimer(); } } catch(e) {} }
+        async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; if (consultationStarted) startTimer(); } } catch(e) {} }
         async function toggleLock() { if (!currentClinicId) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
 
         function setTemplate() { const v = document.getElementById('msgTemplate').value; if (v && v !== 'custom') document.getElementById('notifyMessage').value = v; }
