@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, datetime, timedelta, timezone
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.queue import QueueState
@@ -10,10 +12,12 @@ from ..models.doctor import Doctor
 from .websocket import broadcast
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/next-slot/{clinic_id}")
-async def next_slot(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+async def next_slot(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
@@ -30,7 +34,8 @@ async def next_slot(clinic_id: int, appointment_date: str = None, db: Session = 
 
 
 @router.post("/mark-absent/{clinic_id}")
-async def mark_absent(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+async def mark_absent(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if not current: raise HTTPException(status_code=404, detail="No current patient")
@@ -39,11 +44,12 @@ async def mark_absent(clinic_id: int, appointment_date: str = None, db: Session 
     if queue: queue.total_absent += 1
     db.commit()
     await broadcast(clinic_id, {"action": "mark_absent", "slot": current.slot_number, "message": f"Slot #{current.slot_number} marked absent"})
-    return await next_slot(clinic_id, appointment_date, db)
+    return await next_slot(request, clinic_id, appointment_date, db)
 
 
 @router.post("/add-walkin/{clinic_id}")
-async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", appointment_date: str = None, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", appointment_date: str = None, db: Session = Depends(get_db)):
     try:
         today = appointment_date if appointment_date else str(date.today())
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).count()
@@ -63,7 +69,8 @@ async def add_walkin(clinic_id: int, doctor_id: int, patient_name: str, patient_
 
 
 @router.get("/dashboard/{clinic_id}")
-async def get_dashboard(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_dashboard(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.slot_number).all()
@@ -108,13 +115,13 @@ async def is_queue_locked(clinic_id: int, appointment_date: str = None, db: Sess
 async def get_absentees(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     absentees = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "absent").order_by(Appointment.slot_number).all()
-    return [{"id": a.id, "booking_id": a.booking_id, "slot_number": a.slot_number, "patient_name": a.patient_name, "patient_phone": a.patient_phone, "time_slot": a.time_slot, "appointment_date": str(a.appointment_date)} for a in absentees]
+    return [{"id": a.id, "booking_id": a.booking_id, "slot_number": a.slot_number, "patient_name": a.patient_name, "patient_phone": a.patient_phone, "time_slot": a.time_slot} for a in absentees]
 
 
 @router.post("/start-treatment/{appointment_id}")
 async def start_treatment(appointment_id: int, db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if not appointment: raise HTTPException(status_code=404, detail="Appointment not found")
+    if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
     max_slot = db.query(func.max(Appointment.slot_number)).filter(Appointment.clinic_id == appointment.clinic_id, Appointment.appointment_date == appointment.appointment_date).scalar() or 0
     appointment.status = "waiting"; appointment.slot_number = max_slot + 1
@@ -125,7 +132,7 @@ async def start_treatment(appointment_id: int, db: Session = Depends(get_db)):
 @router.post("/reschedule/{appointment_id}")
 async def reschedule_appointment(appointment_id: int, new_date: str, db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if not appointment: raise HTTPException(status_code=404, detail="Appointment not found")
+    if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
     max_slot = db.query(func.max(Appointment.slot_number)).filter(Appointment.clinic_id == appointment.clinic_id, Appointment.appointment_date == new_date).scalar() or 0
     appointment.appointment_date = new_date; appointment.status = "waiting"; appointment.slot_number = max_slot + 1
