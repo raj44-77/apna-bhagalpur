@@ -11,3 +11,4 @@ jinja2
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt
+slowapi==0.1.9
