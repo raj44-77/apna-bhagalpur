@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Clinics - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .rank-badge { font-size: 1.5rem; min-width: 50px; text-align: center; }
+        .medal-1 { color: #FFD700; font-size: 2rem; }
+        .medal-2 { color: #C0C0C0; font-size: 1.8rem; }
+        .medal-3 { color: #CD7F32; font-size: 1.6rem; }
+        @media (max-width: 600px) {
+            .ranking-card { flex-direction: column; text-align: center; }
+            .ranking-card .rank-badge { min-width: auto; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>🏆 Top Clinics in Bhagalpur</h1>
+            <p>Rankings based on online bookings and patient satisfaction - Last 30 Days</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container-sm">
+            <div id="rankingsList"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2026 Apna Bhagalpur</p></div></div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadRankings() {
+            try {
+                const res = await fetch(`${API_BASE}/clinics/rankings?days=30`);
+                const clinics = await res.json();
+                document.getElementById('rankingsList').innerHTML = clinics.map((c, i) => `
+                    <div class="card ranking-card" style="margin-bottom:12px;">
+                        <div class="card-body" style="display:flex;align-items:center;gap:20px;padding:20px;">
+                            <div class="rank-badge">${c.medal}</div>
+                            <div style="flex:1;">
+                                <h3 style="margin:0;">${c.emoji} ${c.name}</h3>
+                                <p style="margin:4px 0;font-size:0.85rem;color:var(--text-light);">📍 ${c.address}</p>
+                                <span class="badge badge-primary">Score: ${c.score}</span>
+                            </div>
+                            <div style="text-align:right;min-width:80px;">
+                                <div style="font-size:1.4rem;font-weight:700;color:var(--primary);">${c.total_bookings}</div>
+                                <div style="font-size:0.75rem;color:var(--text-light);">bookings</div>
+                                <span class="badge ${c.completion_rate>=80?'badge-success':c.completion_rate>=50?'badge-warning':'badge-danger'}">${c.completion_rate}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', loadRankings);
+    </script>
+</body>
+</html>
