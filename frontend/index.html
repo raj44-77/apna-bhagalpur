@@ -72,6 +72,21 @@
         </div>
     </section>
 
+    <!-- Top Clinics Rankings Section -->
+    <section class="section" style="background: white;">
+        <div class="container">
+            <div class="section-header">
+                <span class="eyebrow">🏆 TOP PERFORMERS</span>
+                <h2>Best Clinics in Bhagalpur</h2>
+                <p>Based on online bookings and patient satisfaction - Last 30 Days</p>
+            </div>
+            <div id="topClinics"></div>
+            <div style="text-align:center;margin-top:24px;">
+                <a href="top-clinics.html" class="btn btn-outline btn-lg">📋 View Full Rankings</a>
+            </div>
+        </div>
+    </section>
+
     <section class="section" style="background: white;">
         <div class="container">
             <div class="section-header">
@@ -119,6 +134,30 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        async function loadTopClinics() {
+            try {
+                const res = await fetch(`${API_BASE}/clinics/rankings?days=30`);
+                const clinics = await res.json();
+                const container = document.getElementById('topClinics');
+                container.innerHTML = clinics.slice(0, 5).map((c, i) => `
+                    <div class="card" style="margin-bottom:12px;">
+                        <div class="card-body" style="display:flex;align-items:center;gap:16px;padding:16px 20px;flex-wrap:wrap;">
+                            <div style="font-size:2rem;min-width:40px;text-align:center;">${c.medal}</div>
+                            <div style="flex:1;min-width:150px;">
+                                <h3 style="margin:0;font-size:1rem;">${c.emoji} ${c.name}</h3>
+                                <p style="margin:4px 0;font-size:0.8rem;color:var(--text-light);">📍 ${c.address}</p>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:1.2rem;font-weight:700;color:var(--primary);">${c.total_bookings}</div>
+                                <div style="font-size:0.75rem;color:var(--text-light);">bookings</div>
+                                <span class="badge ${c.completion_rate>=80?'badge-success':c.completion_rate>=50?'badge-warning':'badge-danger'}">${c.completion_rate}%</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
         async function renderClinics() {
             const container = document.getElementById('clinicCards');
             try {
@@ -155,7 +194,10 @@
                 });
             }
         }
-        document.addEventListener('DOMContentLoaded', renderClinics);
+        document.addEventListener('DOMContentLoaded', () => {
+            renderClinics();
+            loadTopClinics();
+        });
     </script>
 </body>
 </html>
