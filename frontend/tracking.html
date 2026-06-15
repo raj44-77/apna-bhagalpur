@@ -78,8 +78,9 @@
                 document.getElementById('yourTime').textContent = d.time_slot||'-';
                 document.getElementById('queueAhead').textContent = d.queue_ahead;
 
-                const qd = await API.getQueueStatus(currentTracking.clinicId);
-                const totalSlots = (qd.appointments || []).length || 1;
+               const today = new Date().toISOString().split('T')[0];
+               const dashboard = await API.getDashboard(currentTracking.clinicId, today);
+               const totalSlots = (dashboard.appointments || []).length || 1;
                 // Progress based on people ahead vs total
                 const progress = totalSlots > 0 ? Math.min(100, Math.round((d.queue_ahead / totalSlots) * 100)) : 0;
                 const pf = document.getElementById('progressFill');
