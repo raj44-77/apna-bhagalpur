@@ -78,18 +78,19 @@
                 document.getElementById('yourTime').textContent = d.time_slot||'-';
                 document.getElementById('queueAhead').textContent = d.queue_ahead;
 
-               const today = new Date().toISOString().split('T')[0];
-               const dashboard = await API.getDashboard(currentTracking.clinicId, today);
-               const totalSlots = (dashboard.appointments || []).length || 1;
-                // Progress based on people ahead vs total
-                const progress = totalSlots > 0 ? Math.min(100, Math.round((d.queue_ahead / totalSlots) * 100)) : 0;
+                // Use dashboard API to get total count (more reliable)
+                const localDate = new Date().toLocaleDateString('en-CA');
+                const dashboard = await API.getDashboard(currentTracking.clinicId, localDate);
+                const totalSlots = (dashboard.appointments || []).length || 1;
+                
+                const progress = totalSlots > 0 ? Math.round((d.queue_ahead / totalSlots) * 100) : 0;
                 const pf = document.getElementById('progressFill');
-                pf.style.width = progress + '%';
-                pf.textContent = progress + '%';
+                pf.style.width = Math.min(100, progress) + '%';
+                pf.textContent = Math.min(100, progress) + '%';
 
                 const wm = d.queue_ahead * 15, hh = Math.floor(wm/60), mm = wm%60;
                 document.getElementById('waitTime').textContent = (hh>0?hh+'h ':'')+mm+'min';
-                document.getElementById('waitDetail').textContent = `${d.queue_ahead} patient(s) ahead of you (${totalSlots} total)`;
+                document.getElementById('waitDetail').textContent = `${d.queue_ahead} patient(s) ahead (${totalSlots} total)`;
 
                 const sd = document.getElementById('statusMessage');
                 if (d.status==='completed') sd.innerHTML = '<div class="badge badge-success">✅ Complete</div>';
@@ -97,7 +98,7 @@
                 else if (d.queue_ahead<=3) sd.innerHTML = '<div class="badge badge-warning">⚠️ Almost there!</div>';
                 else sd.innerHTML = '<div class="badge badge-primary">⏳ In queue</div>';
 
-                document.getElementById('queueList').innerHTML = (qd.appointments || []).map((a,i) => `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}"><div><strong>#${i+1} | 🕐 ${a.time_slot}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div><div>${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div></div>`).join('');
+                document.getElementById('queueList').innerHTML = (dashboard.appointments || []).map((a,i) => `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.booking_id===currentTracking.bookingId?'border-left:4px solid var(--primary);background:var(--secondary);':''}"><div><strong>#${i+1} | 🕐 ${a.time_slot}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div><div>${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div></div>`).join('');
             } catch(err) {}
         }
 
