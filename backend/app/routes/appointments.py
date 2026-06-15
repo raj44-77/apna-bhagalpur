@@ -26,18 +26,6 @@ class BookingData(BaseModel):
     patient_gender: Optional[str] = None
 
 
-def recalculate_slots(db: Session, clinic_id: int, appointment_date: str):
-    """Recalculate all slot numbers based on time order"""
-    all_apts = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date == appointment_date
-    ).order_by(Appointment.time_slot, Appointment.id).all()
-    
-    for idx, apt in enumerate(all_apts, 1):
-        apt.slot_number = idx
-    db.flush()
-
-
 @router.post("/book")
 @limiter.limit("10/minute")
 async def book_appointment(request: Request, data: BookingData, db: Session = Depends(get_db)):
@@ -54,6 +42,7 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         if queue_check and queue_check.is_locked:
             raise HTTPException(status_code=400, detail="Bookings are closed for this date")
         
+        # Slot number is just a sequential ID, order is by TIME
         count = db.query(Appointment).filter(
             Appointment.clinic_id == data.clinic_id,
             Appointment.appointment_date == data.appointment_date
@@ -88,6 +77,7 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
             db.add(queue)
             db.flush()
         
+        # Make first patient of the day current
         existing_current = db.query(Appointment).filter(
             Appointment.clinic_id == data.clinic_id,
             Appointment.appointment_date == data.appointment_date,
@@ -97,11 +87,6 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
             appointment.status = "current"
             queue.current_slot_number = appointment.slot_number
         
-        db.commit()
-        db.refresh(appointment)
-        
-        # Recalculate slots by time order
-        recalculate_slots(db, data.clinic_id, data.appointment_date)
         db.commit()
         db.refresh(appointment)
         
@@ -132,7 +117,15 @@ async def track_queue(clinic_id: int, slot_number: int, appointment_date: str = 
     
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == track_date).first()
     current_slot = queue.current_slot_number if queue else 0
-    ahead = max(0, appointment.slot_number - current_slot)
+    
+    # Calculate position based on TIME order
+    ahead = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date == track_date,
+        Appointment.status.in_(["waiting", "current"]),
+        Appointment.time_slot < appointment.time_slot
+    ).count()
+    
     wait_minutes = ahead * 15
     hours, minutes = wait_minutes // 60, wait_minutes % 60
     wait_str = f"{hours}h {minutes}min" if hours > 0 else f"{minutes}min"

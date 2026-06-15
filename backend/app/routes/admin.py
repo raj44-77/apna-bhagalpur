@@ -10,7 +10,6 @@ from ..models.queue import QueueState
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from .websocket import broadcast
-from ..routes.appointments import recalculate_slots
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -22,14 +21,19 @@ async def next_slot(request: Request, clinic_id: int, appointment_date: str = No
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
-    next_patient = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "waiting").order_by(Appointment.slot_number).first()
+    # Find next by TIME order
+    next_patient = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id, 
+        Appointment.appointment_date == today, 
+        Appointment.status == "waiting"
+    ).order_by(Appointment.time_slot, Appointment.id).first()
     if next_patient:
         next_patient.status = "current"
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if queue: queue.current_slot_number = next_patient.slot_number; queue.total_patients_served += 1
         db.commit()
-        await broadcast(clinic_id, {"action": "next_slot", "current_slot": next_patient.slot_number, "message": f"Now serving slot #{next_patient.slot_number}"})
-        return {"message": f"Now serving slot #{next_patient.slot_number}", "current_slot": next_patient.slot_number}
+        await broadcast(clinic_id, {"action": "next_slot", "current_slot": next_patient.slot_number, "message": f"Now serving slot #{next_patient.slot_number} - {next_patient.time_slot}"})
+        return {"message": f"Now serving slot #{next_patient.slot_number} at {next_patient.time_slot}", "current_slot": next_patient.slot_number}
     db.commit()
     return {"message": "No more patients"}
 
@@ -65,9 +69,6 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         queue.total_walkins += 1
         db.commit()
         db.refresh(appointment)
-        recalculate_slots(db, clinic_id, today)
-        db.commit()
-        db.refresh(appointment)
         await broadcast(clinic_id, {"action": "add_walkin", "slot": appointment.slot_number, "patient": patient_name, "message": f"Walk-in added: {patient_name}"})
         return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
     except Exception as e: db.rollback(); raise HTTPException(status_code=500, detail=str(e))
@@ -78,7 +79,11 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
 async def get_dashboard(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
-    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.slot_number).all()
+    # Order by TIME, not slot number
+    appointments = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id, 
+        Appointment.appointment_date == today
+    ).order_by(Appointment.time_slot, Appointment.id).all()
     current = None
     for a in appointments:
         if a.status == "current": current = a; break
