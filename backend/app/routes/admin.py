@@ -16,7 +16,6 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 def to_minutes(time_str):
-    """Convert time like '09:30 AM' to minutes since midnight"""
     if not time_str: return 9999
     try:
         t, period = time_str.strip().split()
@@ -33,12 +32,9 @@ async def next_slot(request: Request, clinic_id: int, appointment_date: str = No
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
-    
-    # Get all waiting and sort by time in Python (proper AM/PM)
     waiting = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "waiting").all()
     waiting.sort(key=lambda a: to_minutes(a.time_slot))
     next_patient = waiting[0] if waiting else None
-    
     if next_patient:
         next_patient.status = "current"
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
@@ -71,7 +67,7 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         today = appointment_date if appointment_date else str(date.today())
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).count()
         slot_num = count + 1
-        booking_id = f"WLK{clinic_id}{today.replace('-','')}{slot_num:03d}"
+        booking_id = f"W{slot_num:03d}"
         ist = timezone(timedelta(hours=5, minutes=30))
         ist_time = datetime.now(ist).strftime("%I:%M %p")
         appointment = Appointment(booking_id=booking_id, clinic_id=clinic_id, doctor_id=doctor_id, patient_name=patient_name, patient_phone=patient_phone or "", appointment_date=today, time_slot=ist_time, slot_number=slot_num, booking_type="walkin", status="waiting")
@@ -91,7 +87,6 @@ async def get_dashboard(request: Request, clinic_id: int, appointment_date: str 
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).all()
-    # Sort by time in Python
     appointments.sort(key=lambda a: to_minutes(a.time_slot))
     current = None
     for a in appointments:

@@ -52,7 +52,7 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         
         count = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).count()
         slot_num = count + 1
-        booking_id = f"BKG{data.clinic_id}{date.today().strftime('%Y%m%d')}{slot_num:03d}"
+        booking_id = f"B{slot_num:03d}"
         
         appointment = Appointment(
             booking_id=booking_id, clinic_id=data.clinic_id, doctor_id=data.doctor_id,
@@ -112,7 +112,6 @@ async def track_by_booking(clinic_id: int, booking_id: str, db: Session = Depend
     appointment = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.booking_id == booking_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Booking not found")
     
-    # Count patients ahead by time
     all_apts = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment.appointment_date, Appointment.status.in_(["waiting", "current"])).all()
     all_apts.sort(key=lambda a: to_minutes(a.time_slot))
     
