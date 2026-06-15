@@ -26,6 +26,22 @@ class BookingData(BaseModel):
     patient_gender: Optional[str] = None
 
 
+def to_minutes(time_str):
+    """Convert time like '09:30 AM' to minutes since midnight"""
+    if not time_str:
+        return 0
+    try:
+        t, period = time_str.strip().split()
+        h, m = map(int, t.split(':'))
+        if period == 'PM' and h != 12:
+            h += 12
+        if period == 'AM' and h == 12:
+            h = 0
+        return h * 60 + m
+    except:
+        return 0
+
+
 @router.post("/book")
 @limiter.limit("10/minute")
 async def book_appointment(request: Request, data: BookingData, db: Session = Depends(get_db)):
@@ -54,8 +70,16 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         queue = db.query(QueueState).filter(QueueState.clinic_id == data.clinic_id, QueueState.appointment_date == data.appointment_date).first()
         if not queue: queue = QueueState(clinic_id=data.clinic_id, doctor_id=data.doctor_id, appointment_date=data.appointment_date, current_slot_number=0); db.add(queue); db.flush()
         
+        # Find earliest time slot and make it current
         existing_current = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date, Appointment.status == "current").first()
-        if not existing_current: appointment.status = "current"; queue.current_slot_number = appointment.slot_number
+        if not existing_current:
+            earliest = db.query(Appointment).filter(
+                Appointment.clinic_id == data.clinic_id,
+                Appointment.appointment_date == data.appointment_date
+            ).order_by(Appointment.time_slot, Appointment.id).first()
+            if earliest:
+                earliest.status = "current"
+                queue.current_slot_number = earliest.slot_number
         
         db.commit(); db.refresh(appointment)
         
@@ -93,7 +117,7 @@ async def track_queue(clinic_id: int, slot_number: int, appointment_date: str = 
 async def track_by_booking(clinic_id: int, booking_id: str, db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.booking_id == booking_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Booking not found")
-    ahead = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment.appointment_date, Appointment.status.in_(["waiting", "current"]), Appointment.time_slot < appointment.time_slot).count()
+    ahead = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment.appointment_date, Appointment.status.in_(["waiting", "current"]), to_minutes(Appointment.time_slot) < to_minutes(appointment.time_slot)).count()
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == appointment.appointment_date).first()
     current_slot = queue.current_slot_number if queue else 0
     wait_minutes = ahead * 15; hours, minutes = wait_minutes // 60, wait_minutes % 60

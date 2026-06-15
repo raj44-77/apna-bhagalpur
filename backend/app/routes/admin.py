@@ -15,25 +15,33 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
+def to_minutes(time_str):
+    """Convert time like '09:30 AM' to minutes since midnight"""
+    if not time_str: return 0
+    try:
+        t, period = time_str.strip().split()
+        h, m = map(int, t.split(':'))
+        if period == 'PM' and h != 12: h += 12
+        if period == 'AM' and h == 12: h = 0
+        return h * 60 + m
+    except: return 0
+
+
 @router.post("/next-slot/{clinic_id}")
 @limiter.limit("20/minute")
 async def next_slot(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
-    # Find next by TIME order
-    next_patient = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id, 
-        Appointment.appointment_date == today, 
-        Appointment.status == "waiting"
-    ).order_by(Appointment.time_slot, Appointment.id).first()
+    # Find next by EARLIEST time
+    next_patient = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "waiting").order_by(Appointment.time_slot, Appointment.id).first()
     if next_patient:
         next_patient.status = "current"
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if queue: queue.current_slot_number = next_patient.slot_number; queue.total_patients_served += 1
         db.commit()
-        await broadcast(clinic_id, {"action": "next_slot", "current_slot": next_patient.slot_number, "message": f"Now serving slot #{next_patient.slot_number} - {next_patient.time_slot}"})
-        return {"message": f"Now serving slot #{next_patient.slot_number} at {next_patient.time_slot}", "current_slot": next_patient.slot_number}
+        await broadcast(clinic_id, {"action": "next_slot", "current_slot": next_patient.slot_number, "message": f"Now serving: {next_patient.patient_name} ({next_patient.time_slot})"})
+        return {"message": f"Now serving {next_patient.patient_name} at {next_patient.time_slot}", "current_slot": next_patient.slot_number}
     db.commit()
     return {"message": "No more patients"}
 
@@ -48,7 +56,7 @@ async def mark_absent(request: Request, clinic_id: int, appointment_date: str = 
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if queue: queue.total_absent += 1
     db.commit()
-    await broadcast(clinic_id, {"action": "mark_absent", "slot": current.slot_number, "message": f"Slot #{current.slot_number} marked absent"})
+    await broadcast(clinic_id, {"action": "mark_absent", "slot": current.slot_number, "message": f"Marked absent: {current.patient_name}"})
     return await next_slot(request, clinic_id, appointment_date, db)
 
 
@@ -67,9 +75,8 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if not queue: queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=today, current_slot_number=0); db.add(queue); db.flush()
         queue.total_walkins += 1
-        db.commit()
-        db.refresh(appointment)
-        await broadcast(clinic_id, {"action": "add_walkin", "slot": appointment.slot_number, "patient": patient_name, "message": f"Walk-in added: {patient_name}"})
+        db.commit(); db.refresh(appointment)
+        await broadcast(clinic_id, {"action": "add_walkin", "slot": appointment.slot_number, "patient": patient_name, "message": f"Walk-in: {patient_name}"})
         return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
     except Exception as e: db.rollback(); raise HTTPException(status_code=500, detail=str(e))
 
@@ -79,18 +86,14 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
 async def get_dashboard(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
-    # Order by TIME, not slot number
-    appointments = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id, 
-        Appointment.appointment_date == today
-    ).order_by(Appointment.time_slot, Appointment.id).all()
+    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.time_slot, Appointment.id).all()
     current = None
     for a in appointments:
         if a.status == "current": current = a; break
     return {
         "appointment_date": today, "is_locked": queue.is_locked if queue else False,
         "queue": {"current_slot": queue.current_slot_number if queue else 0, "total_served": queue.total_patients_served if queue else 0, "total_absent": queue.total_absent if queue else 0, "total_walkins": queue.total_walkins if queue else 0},
-        "current_patient": {"slot_number": current.slot_number if current else None, "name": current.patient_name if current else None, "booking_type": current.booking_type if current else None, "time_slot": current.time_slot if current else None} if current else None,
+        "current_patient": {"slot_number": current.slot_number if current else None, "name": current.patient_name if current else None, "booking_type": current.booking_type if current else None, "time_slot": current.time_slot if current else None, "booking_id": current.booking_id if current else None} if current else None,
         "appointments": [{"id": a.id, "booking_id": a.booking_id, "slot_number": a.slot_number, "patient_name": a.patient_name, "patient_phone": a.patient_phone, "booking_type": a.booking_type, "time_slot": a.time_slot, "status": a.status, "doctor_name": a.doctor.name if a.doctor else None} for a in appointments],
         "stats": {"total": len(appointments), "completed": len([a for a in appointments if a.status == "completed"]), "waiting": len([a for a in appointments if a.status == "waiting"]), "absent": len([a for a in appointments if a.status == "absent"])}
     }
