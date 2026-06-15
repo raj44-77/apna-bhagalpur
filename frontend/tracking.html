@@ -122,7 +122,7 @@
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
-            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
         </div>
     </footer>
 
@@ -192,7 +192,7 @@
 
                 const qd = await API.getQueueStatus(currentTracking.clinicId);
                 const totalSlots = (qd.appointments || []).length || 1;
-                const progress = Math.min(100, Math.round((data.queue_position / totalSlots) * 100));
+                const progress = Math.min(100, Math.round(((data.queue_position) / totalSlots) * 100));
                 const pf = document.getElementById('progressFill');
                 pf.style.width = progress + '%';
                 pf.textContent = progress + '%';
@@ -214,7 +214,7 @@
 
                 document.getElementById('queueList').innerHTML = (qd.appointments || []).map(a => `
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}">
-                        <div><strong>#${a.slot_number}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
+                        <div><strong>🕐 ${a.time_slot}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
                         <div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div>
                     </div>
                 `).join('');

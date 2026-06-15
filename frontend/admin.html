@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="card" style="margin-bottom:24px;">
-                    <div class="card-header"><h3>📋 Queue</h3></div>
+                    <div class="card-header"><h3>📋 Queue (Time Order)</h3></div>
                     <div class="card-body" id="adminQueueList" style="max-height:500px;overflow-y:auto;">
                         <div class="empty-state"><p>No appointments for this date</p></div>
                     </div>
@@ -99,40 +99,18 @@
     <div class="modal-overlay hidden" id="walkinModal">
         <div class="modal">
             <div class="modal-header"><h3>🚶 Add Walk-in</h3><button class="modal-close" onclick="hideModal('walkinModal')">×</button></div>
-            <div class="modal-body">
-                <form id="walkinForm">
-                    <div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" id="walkinName" required></div>
-                    <div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="walkinPhone"></div>
-                    <div class="form-group"><label class="form-label">Doctor *</label><select class="form-control" id="walkinDoctor" required><option value="">Select...</option></select></div>
-                </form>
-            </div>
+            <div class="modal-body"><form id="walkinForm"><div class="form-group"><label class="form-label">Name *</label><input type="text" class="form-control" id="walkinName" required></div><div class="form-group"><label class="form-label">Phone</label><input type="tel" class="form-control" id="walkinPhone"></div><div class="form-group"><label class="form-label">Doctor *</label><select class="form-control" id="walkinDoctor" required><option value="">Select...</option></select></div></form></div>
             <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('walkinModal')">Cancel</button><button class="btn btn-success" onclick="addWalkIn()">Add</button></div>
         </div>
     </div>
-
     <div class="modal-overlay hidden" id="absentModal">
-        <div class="modal">
-            <div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div>
-            <div class="modal-body"><p>Mark current patient as absent?</p></div>
-            <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button><button class="btn btn-danger" onclick="markAbsent()">Confirm</button></div>
-        </div>
+        <div class="modal"><div class="modal-header"><h3>⚠️ Mark Absent?</h3><button class="modal-close" onclick="hideModal('absentModal')">×</button></div><div class="modal-body"><p>Mark current patient as absent?</p></div><div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('absentModal')">Cancel</button><button class="btn btn-danger" onclick="markAbsent()">Confirm</button></div></div>
     </div>
-
     <div class="modal-overlay hidden" id="notifyModal">
-        <div class="modal">
-            <div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div>
-            <div class="modal-body">
-                <p style="margin-bottom:12px;">Send message to <strong id="notifyCount">0</strong> patients for <strong id="notifyDate"></strong></p>
-                <div class="form-group"><label class="form-label">Message Template</label><select class="form-control" id="msgTemplate" onchange="setTemplate()"><option value="">Select template...</option><option value="Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.">🚨 Emergency - Doctor Unavailable</option><option value="Doctor is running 1 hour late today. Please plan accordingly. Sorry for the delay.">⏰ Doctor Running Late</option><option value="Clinic is closed today due to unforeseen circumstances. Please visit tomorrow.">🏥 Clinic Closed Today</option><option value="Your appointment is confirmed for today. Please arrive on time.">✅ Appointment Reminder</option><option value="custom">✏️ Custom Message</option></select></div>
-                <div class="form-group"><label class="form-label">Message *</label><textarea class="form-control" id="notifyMessage" rows="3">Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.</textarea></div>
-            </div>
-            <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('notifyModal')">Cancel</button><button class="btn" style="background:#25D366;color:white;" onclick="sendBulkWhatsApp()">📱 Send to All</button></div>
-        </div>
+        <div class="modal"><div class="modal-header"><h3>📢 Send WhatsApp Message</h3><button class="modal-close" onclick="hideModal('notifyModal')">×</button></div><div class="modal-body"><p style="margin-bottom:12px;">Send message to <strong id="notifyCount">0</strong> patients for <strong id="notifyDate"></strong></p><div class="form-group"><label class="form-label">Message Template</label><select class="form-control" id="msgTemplate" onchange="setTemplate()"><option value="">Select template...</option><option value="Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.">🚨 Emergency - Doctor Unavailable</option><option value="Doctor is running 1 hour late today. Please plan accordingly. Sorry for the delay.">⏰ Doctor Running Late</option><option value="Clinic is closed today due to unforeseen circumstances. Please visit tomorrow.">🏥 Clinic Closed Today</option><option value="Your appointment is confirmed for today. Please arrive on time.">✅ Appointment Reminder</option><option value="custom">✏️ Custom Message</option></select></div><div class="form-group"><label class="form-label">Message *</label><textarea class="form-control" id="notifyMessage" rows="3">Doctor unavailable today due to emergency. Sorry for inconvenience. Please reschedule your appointment.</textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('notifyModal')">Cancel</button><button class="btn" style="background:#25D366;color:white;" onclick="sendBulkWhatsApp()">📱 Send to All</button></div></div>
     </div>
 
-    <footer class="footer">
-        <div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div></div>
-    </footer>
+    <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p></div></div></footer>
 
     <script src="js/app.js"></script>
     <script src="js/api.js"></script>
@@ -165,7 +143,7 @@
         function updateUI() {
             const c = dashboardData?.current_patient;
             const s = document.getElementById('currentPatientSection');
-            if (c && c.slot_number) { s.innerHTML = `<div style="text-align:center;"><div style="font-size:3rem;font-weight:700;color:var(--primary);">#${c.slot_number}</div><h3>${c.name}</h3><p>${c.time_slot||''}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; }
+            if (c && c.slot_number) { s.innerHTML = `<div style="text-align:center;"><div style="font-size:3rem;font-weight:700;color:var(--primary);">#${c.slot_number}</div><h3>${c.name}</h3><p>🕐 ${c.time_slot||''}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; }
             else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; stopTimer(); }
             const apps = dashboardData?.appointments || [];
             document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map(a => {
@@ -173,7 +151,7 @@
                 if (a.status === 'absent') {
                     actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`;
                 }
-                return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}"><div><strong>#${a.slot_number}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🕐 ${a.time_slot}</div>${actionButtons}</div><div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`;
+                return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}"><div><strong>🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | #${a.slot_number}</div>${actionButtons}</div><div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`;
             }).join('');
             document.getElementById('statProgress').textContent = `${(dashboardData?.stats?.completed||0)}/${(dashboardData?.stats?.total||0)}`;
             document.getElementById('statAbsent').textContent = dashboardData?.stats?.absent || 0;
@@ -184,23 +162,14 @@
             if (startBtn) { if (c && c.slot_number && !consultationStarted && !timerInterval) { startBtn.style.display = 'block'; } else { startBtn.style.display = 'none'; } }
         }
 
-        function toggleAdvanced() {
-            const div = document.getElementById('advancedFeatures');
-            const btn = event.target;
-            if (div.style.display === 'none' || div.style.display === '') {
-                div.style.display = 'block'; btn.textContent = '⚙️ Advanced Features ▴';
-            } else {
-                div.style.display = 'none'; btn.textContent = '⚙️ Advanced Features ▾';
-            }
-        }
-
+        function toggleAdvanced() { const div = document.getElementById('advancedFeatures'); const btn = event.target; if (div.style.display === 'none' || div.style.display === '') { div.style.display = 'block'; btn.textContent = '⚙️ Advanced Features ▴'; } else { div.style.display = 'none'; btn.textContent = '⚙️ Advanced Features ▾'; } }
         function startConsultation() { consultationStarted = true; seconds = 0; document.getElementById('startBtn').style.display = 'none'; startTimer(); showToast('Started', 'Consultation started', 'success'); }
         function stopTimer() { clearInterval(timerInterval); timerInterval = null; consultationStarted = false; }
         function startTimer() { stopTimer(); if (dashboardData?.current_patient && !isPaused) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
 
         async function nextSlot() { if (!currentClinicId) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function markAbsent() { if (!currentClinicId) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function addWalkIn() { const name = document.getElementById('walkinName').value.trim(), phone = document.getElementById('walkinPhone').value.trim(), doctorId = parseInt(document.getElementById('walkinDoctor').value); if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; } if (!currentClinicId) { showToast('Error', 'No clinic', 'error'); return; } try { const result = await API.addWalkin(currentClinicId, { doctor_id: doctorId, patient_name: name, patient_phone: phone || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${name} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function addWalkIn() { const name = document.getElementById('walkinName').value.trim(), phone = document.getElementById('walkinPhone').value.trim(), doctorId = parseInt(document.getElementById('walkinDoctor').value); if (!name || !doctorId) { showToast('Error', 'Fill all fields', 'error'); return; } if (!currentClinicId) { showToast('Error', 'No clinic', 'error'); return; } try { await API.addWalkin(currentClinicId, { doctor_id: doctorId, patient_name: name, patient_phone: phone || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${name} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; if (consultationStarted) startTimer(); } } catch(e) {} }
         async function toggleLock() { if (!currentClinicId) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
 
@@ -211,7 +180,7 @@
         function setTemplate() { const v = document.getElementById('msgTemplate').value; if (v && v !== 'custom') document.getElementById('notifyMessage').value = v; }
         function prepareNotify() { document.getElementById('notifyDate').textContent = getSelectedDate() || new Date().toISOString().split('T')[0]; document.getElementById('notifyCount').textContent = (dashboardData?.appointments||[]).filter(a => a.status==='waiting'||a.status==='current').length; }
         function sendBulkWhatsApp() { const msg = encodeURIComponent(document.getElementById('notifyMessage').value); const p = (dashboardData?.appointments||[]).filter(a => a.status==='waiting'||a.status==='current'); if (!p.length) { showToast('Info','No patients','info'); return; } p.forEach((pt,i) => { setTimeout(() => { if (pt.patient_phone?.length===10) window.open(`https://wa.me/91${pt.patient_phone}?text=${msg}`,'_blank'); }, i*1000); }); hideModal('notifyModal'); showToast('Sent!',`${p.length} patients`,'success'); }
-        function downloadPDF() { const apps = dashboardData?.appointments||[]; if (!apps.length) { showToast('Info','No data','info'); return; } const cn = document.getElementById('adminClinicName').value||'Clinic', td = getSelectedDate()||new Date().toISOString().split('T')[0]; let h = `<html><head><meta charset="UTF-8"><title>${cn} - ${td}</title><style>body{font-family:Arial;padding:20px}h1{color:#1E40AF}h3{color:#666}table{width:100%;border-collapse:collapse}th{background:#1E40AF;color:white;padding:10px}td{padding:10px;border-bottom:1px solid #ddd}</style></head><body><h1>${cn}</h1><h3>Queue: ${td} | ${apps.length} patients</h3><table><tr><th>Slot</th><th>Patient</th><th>Phone</th><th>Time</th><th>Type</th><th>Status</th></tr>`; apps.forEach(a => { h += `<tr><td>#${a.slot_number}</td><td>${a.patient_name}</td><td>${a.patient_phone||'N/A'}</td><td>${a.time_slot}</td><td>${a.booking_type}</td><td>${a.status}</td></tr>`; }); h += `</table><p style="margin-top:30px;color:#999">Apna Bhagalpur | ${new Date().toLocaleString()}</p></body></html>`; const w = window.open('','_blank','width=800,height=600'); w.document.write(h); w.document.close(); setTimeout(()=>w.print(),500); showToast('Done','PDF ready','success'); }
+        function downloadPDF() { const apps = dashboardData?.appointments||[]; if (!apps.length) { showToast('Info','No data','info'); return; } const cn = document.getElementById('adminClinicName').value||'Clinic', td = getSelectedDate()||new Date().toISOString().split('T')[0]; let h = `<html><head><meta charset="UTF-8"><title>${cn} - ${td}</title><style>body{font-family:Arial;padding:20px}h1{color:#1E40AF}h3{color:#666}table{width:100%;border-collapse:collapse}th{background:#1E40AF;color:white;padding:10px}td{padding:10px;border-bottom:1px solid #ddd}</style></head><body><h1>${cn}</h1><h3>Queue: ${td} | ${apps.length} patients</h3><table><tr><th>Time</th><th>Patient</th><th>Phone</th><th>Slot</th><th>Type</th><th>Status</th></tr>`; apps.forEach(a => { h += `<tr><td>${a.time_slot}</td><td>${a.patient_name}</td><td>${a.patient_phone||'N/A'}</td><td>#${a.slot_number}</td><td>${a.booking_type}</td><td>${a.status}</td></tr>`; }); h += `</table><p style="margin-top:30px;color:#999">Apna Bhagalpur | ${new Date().toLocaleString()}</p></body></html>`; const w = window.open('','_blank','width=800,height=600'); w.document.write(h); w.document.close(); setTimeout(()=>w.print(),500); showToast('Done','PDF ready','success'); }
 
         const origShow = showModal; showModal = function(id) { if (id==='notifyModal') prepareNotify(); origShow(id); };
         document.addEventListener('DOMContentLoaded', () => { document.getElementById('adminDate').value = new Date().toISOString().split('T')[0]; initClinic(); });
