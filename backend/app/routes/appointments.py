@@ -28,18 +28,14 @@ class BookingData(BaseModel):
 
 def to_minutes(time_str):
     """Convert time like '09:30 AM' to minutes since midnight"""
-    if not time_str:
-        return 0
+    if not time_str: return 9999
     try:
         t, period = time_str.strip().split()
         h, m = map(int, t.split(':'))
-        if period == 'PM' and h != 12:
-            h += 12
-        if period == 'AM' and h == 12:
-            h = 0
+        if period == 'PM' and h != 12: h += 12
+        if period == 'AM' and h == 12: h = 0
         return h * 60 + m
-    except:
-        return 0
+    except: return 9999
 
 
 @router.post("/book")
@@ -70,16 +66,14 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         queue = db.query(QueueState).filter(QueueState.clinic_id == data.clinic_id, QueueState.appointment_date == data.appointment_date).first()
         if not queue: queue = QueueState(clinic_id=data.clinic_id, doctor_id=data.doctor_id, appointment_date=data.appointment_date, current_slot_number=0); db.add(queue); db.flush()
         
-        # Find earliest time slot and make it current
+        # Always set the EARLIEST time patient as current
         existing_current = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date, Appointment.status == "current").first()
         if not existing_current:
-            earliest = db.query(Appointment).filter(
-                Appointment.clinic_id == data.clinic_id,
-                Appointment.appointment_date == data.appointment_date
-            ).order_by(Appointment.time_slot, Appointment.id).first()
-            if earliest:
-                earliest.status = "current"
-                queue.current_slot_number = earliest.slot_number
+            all_apts = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).all()
+            all_apts.sort(key=lambda a: to_minutes(a.time_slot))
+            if all_apts:
+                all_apts[0].status = "current"
+                queue.current_slot_number = all_apts[0].slot_number
         
         db.commit(); db.refresh(appointment)
         
@@ -117,16 +111,36 @@ async def track_queue(clinic_id: int, slot_number: int, appointment_date: str = 
 async def track_by_booking(clinic_id: int, booking_id: str, db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.booking_id == booking_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Booking not found")
-    ahead = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment.appointment_date, Appointment.status.in_(["waiting", "current"]), to_minutes(Appointment.time_slot) < to_minutes(appointment.time_slot)).count()
+    
+    # Count patients ahead by time
+    all_apts = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment.appointment_date, Appointment.status.in_(["waiting", "current"])).all()
+    all_apts.sort(key=lambda a: to_minutes(a.time_slot))
+    
+    ahead = 0
+    for a in all_apts:
+        if a.booking_id == booking_id: break
+        ahead += 1
+    
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == appointment.appointment_date).first()
     current_slot = queue.current_slot_number if queue else 0
     wait_minutes = ahead * 15; hours, minutes = wait_minutes // 60, wait_minutes % 60
     wait_str = f"{hours}h {minutes}min" if hours > 0 else f"{minutes}min"
+    
     if appointment.status == "completed": status_msg, alert = "Complete", "success"
     elif ahead == 0 and appointment.status == "current": status_msg, alert = "Your turn now!", "warning"
     elif ahead <= 3: status_msg, alert = "Almost there!", "warning"
     else: status_msg, alert = "In queue", "info"
-    return {"booking_id": appointment.booking_id, "slot_number": appointment.slot_number, "queue_position": ahead + 1, "queue_ahead": ahead, "time_slot": appointment.time_slot, "status": appointment.status, "status_message": status_msg, "alert_type": alert, "patient_name": appointment.patient_name, "clinic_name": appointment.clinic.name if appointment.clinic else None, "current_slot": current_slot, "estimated_wait_minutes": wait_minutes, "estimated_wait_string": wait_str}
+    
+    return {
+        "booking_id": appointment.booking_id, "slot_number": appointment.slot_number,
+        "queue_position": ahead + 1, "queue_ahead": ahead,
+        "time_slot": appointment.time_slot, "status": appointment.status,
+        "status_message": status_msg, "alert_type": alert,
+        "patient_name": appointment.patient_name,
+        "clinic_name": appointment.clinic.name if appointment.clinic else None,
+        "current_slot": current_slot, "estimated_wait_minutes": wait_minutes,
+        "estimated_wait_string": wait_str
+    }
 
 
 @router.get("/my-bookings")
