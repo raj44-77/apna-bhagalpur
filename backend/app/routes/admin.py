@@ -10,6 +10,7 @@ from ..models.queue import QueueState
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from .websocket import broadcast
+from ..routes.appointments import recalculate_slots
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -62,7 +63,11 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if not queue: queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=today, current_slot_number=0); db.add(queue); db.flush()
         queue.total_walkins += 1
-        db.commit(); db.refresh(appointment)
+        db.commit()
+        db.refresh(appointment)
+        recalculate_slots(db, clinic_id, today)
+        db.commit()
+        db.refresh(appointment)
         await broadcast(clinic_id, {"action": "add_walkin", "slot": appointment.slot_number, "patient": patient_name, "message": f"Walk-in added: {patient_name}"})
         return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
     except Exception as e: db.rollback(); raise HTTPException(status_code=500, detail=str(e))
