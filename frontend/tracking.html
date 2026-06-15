@@ -23,9 +23,12 @@
             <button class="hamburger"><span></span><span></span><span></span></button>
         </div>
     </nav>
+
     <section class="page-hero"><div class="page-hero-inner"><h1>📍 Live Queue Tracking</h1><p>Enter your Booking ID to see real-time queue position</p></div></section>
+
     <section class="section"><div class="container-sm">
-        <div class="card" id="searchCard"><div class="card-header"><h3>🔍 Track Your Position</h3></div><div class="card-body"><form id="trackForm"><div class="form-group"><label class="form-label">Select Clinic *</label><select class="form-control" id="clinicSelect" required><option value="">Choose a clinic...</option></select></div><div class="form-group"><label class="form-label">Booking ID *</label><input type="text" class="form-control" id="bookingInput" placeholder="Enter your Booking ID (e.g., BKG1101)" required><small style="color:var(--text-light);">Given when you booked the appointment</small></div><button type="submit" class="btn btn-primary btn-block btn-lg">🔍 Track Now</button></form></div></div>
+        <div class="card" id="searchCard"><div class="card-header"><h3>🔍 Track Your Position</h3></div><div class="card-body"><form id="trackForm"><div class="form-group"><label class="form-label">Select Clinic *</label><select class="form-control" id="clinicSelect" required><option value="">Choose a clinic...</option></select></div><div class="form-group"><label class="form-label">Booking ID *</label><input type="text" class="form-control" id="bookingInput" placeholder="Enter your Booking ID (e.g., B001)" required><small style="color:var(--text-light);">Given when you booked the appointment</small></div><button type="submit" class="btn btn-primary btn-block btn-lg">🔍 Track Now</button></form></div></div>
+
         <div id="trackingDisplay" style="display:none;">
             <div class="grid-3" style="margin-bottom:24px;">
                 <div class="stat-card" style="text-align:center;"><div class="stat-icon" style="background:rgba(59,130,246,0.1);margin:0 auto 12px;">🏃</div><div class="stat-label">Queue Position</div><div class="stat-value" id="queuePosition" style="color:var(--primary);">-</div></div>
@@ -41,7 +44,9 @@
             <div class="card"><div class="card-header"><h3>📋 Today's Queue</h3></div><div class="card-body" id="queueList" style="max-height:400px;overflow-y:auto;"></div></div>
         </div>
     </div></section>
+
     <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2026 Apna Bhagalpur</p></div></div></footer>
+
     <script src="js/app.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
@@ -49,8 +54,52 @@
         let currentTracking = null, ws = null;
         async function populateClinics() { const s = document.getElementById('clinicSelect'); try { const c = await API.getClinics(); c.forEach(x => s.innerHTML += `<option value="${x.id}">${x.emoji} ${x.name}</option>`); } catch(e) { CLINICS.forEach(x => s.innerHTML += `<option value="${x.id}">${x.emoji} ${x.name}</option>`); } const p = new URLSearchParams(window.location.search); const ci = p.get('clinic'), bi = p.get('booking'); if (ci) s.value = ci; if (bi) document.getElementById('bookingInput').value = bi; if (ci && bi) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500); }
         function connectWebSocket(id) { if (ws) ws.close(); document.getElementById('wsIndicator').innerHTML = '🟡 Connecting...'; const l = window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'; ws = new WebSocket(l?`ws://localhost:8000/ws/${id}`:`wss://apna-bhagalpur.onrender.com/ws/${id}`); ws.onopen = () => { document.getElementById('wsIndicator').innerHTML = '🟢 Live'; }; ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.type==='queue_update') { updateTrackingDisplay(); showToast('🔔', m.data.message, 'info'); } }; ws.onclose = () => { document.getElementById('wsIndicator').innerHTML = '🔴 Reconnecting...'; setTimeout(()=>connectWebSocket(id), 3000); }; }
-        document.getElementById('trackForm').addEventListener('submit', async function(e) { e.preventDefault(); const cid = parseInt(document.getElementById('clinicSelect').value), bid = document.getElementById('bookingInput').value.trim(); if (!cid||!bid) { showToast('Error','Enter clinic and Booking ID','error'); return; } try { const d = await API.trackByBooking(cid, bid); if (!d||d.detail) { showToast('Not Found','Check your Booking ID','error'); return; } currentTracking = { clinicId: cid, bookingId: bid, slotNum: d.slot_number }; document.getElementById('searchCard').style.display = 'none'; document.getElementById('trackingDisplay').style.display = 'block'; await updateTrackingDisplay(); connectWebSocket(cid); } catch(err) { showToast('Error','Cannot connect','error'); } });
-        async function updateTrackingDisplay() { if (!currentTracking) return; try { const d = await API.trackByBooking(currentTracking.clinicId, currentTracking.bookingId); document.getElementById('queuePosition').textContent = `#${d.queue_position}`; document.getElementById('yourTime').textContent = d.time_slot||'-'; document.getElementById('queueAhead').textContent = d.queue_ahead; const qd = await API.getQueueStatus(currentTracking.clinicId); const total = (qd.appointments||[]).length||1; const progress = Math.min(100, Math.round((d.queue_position/total)*100)); const pf = document.getElementById('progressFill'); pf.style.width = progress+'%'; pf.textContent = progress+'%'; const wm = d.queue_ahead*15, hh = Math.floor(wm/60), mm = wm%60; document.getElementById('waitTime').textContent = (hh>0?hh+'h ':'')+mm+'min'; document.getElementById('waitDetail').textContent = `${d.queue_ahead} patient(s) ahead`; const sd = document.getElementById('statusMessage'); if (d.status==='completed') sd.innerHTML = '<div class="badge badge-success">✅ Complete</div>'; else if (d.queue_ahead===0&&d.status==='current') sd.innerHTML = '<div class="badge badge-warning pulse">🔔 Your turn!</div>'; else if (d.queue_ahead<=3) sd.innerHTML = '<div class="badge badge-warning">⚠️ Almost there!</div>'; else sd.innerHTML = '<div class="badge badge-primary">⏳ In queue</div>'; document.getElementById('queueList').innerHTML = (qd.appointments||[]).map((a,i) => `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}"><div><strong>#${i+1} | 🕐 ${a.time_slot}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div><div>${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div></div>`).join(''); } catch(err) {} }
+
+        document.getElementById('trackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const cid = parseInt(document.getElementById('clinicSelect').value), bid = document.getElementById('bookingInput').value.trim();
+            if (!cid||!bid) { showToast('Error','Enter clinic and Booking ID','error'); return; }
+            try {
+                const d = await API.trackByBooking(cid, bid);
+                if (!d||d.detail) { showToast('Not Found','Check your Booking ID','error'); return; }
+                currentTracking = { clinicId: cid, bookingId: bid, slotNum: d.slot_number };
+                document.getElementById('searchCard').style.display = 'none';
+                document.getElementById('trackingDisplay').style.display = 'block';
+                await updateTrackingDisplay();
+                connectWebSocket(cid);
+            } catch(err) { showToast('Error','Cannot connect','error'); }
+        });
+
+        async function updateTrackingDisplay() {
+            if (!currentTracking) return;
+            try {
+                const d = await API.trackByBooking(currentTracking.clinicId, currentTracking.bookingId);
+                document.getElementById('queuePosition').textContent = `#${d.queue_position}`;
+                document.getElementById('yourTime').textContent = d.time_slot||'-';
+                document.getElementById('queueAhead').textContent = d.queue_ahead;
+
+                const qd = await API.getQueueStatus(currentTracking.clinicId);
+                const totalSlots = (qd.appointments || []).length || 1;
+                // Progress based on people ahead vs total
+                const progress = totalSlots > 0 ? Math.min(100, Math.round((d.queue_ahead / totalSlots) * 100)) : 0;
+                const pf = document.getElementById('progressFill');
+                pf.style.width = progress + '%';
+                pf.textContent = progress + '%';
+
+                const wm = d.queue_ahead * 15, hh = Math.floor(wm/60), mm = wm%60;
+                document.getElementById('waitTime').textContent = (hh>0?hh+'h ':'')+mm+'min';
+                document.getElementById('waitDetail').textContent = `${d.queue_ahead} patient(s) ahead of you (${totalSlots} total)`;
+
+                const sd = document.getElementById('statusMessage');
+                if (d.status==='completed') sd.innerHTML = '<div class="badge badge-success">✅ Complete</div>';
+                else if (d.queue_ahead===0&&d.status==='current') sd.innerHTML = '<div class="badge badge-warning pulse">🔔 Your turn!</div>';
+                else if (d.queue_ahead<=3) sd.innerHTML = '<div class="badge badge-warning">⚠️ Almost there!</div>';
+                else sd.innerHTML = '<div class="badge badge-primary">⏳ In queue</div>';
+
+                document.getElementById('queueList').innerHTML = (qd.appointments || []).map((a,i) => `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}"><div><strong>#${i+1} | 🕐 ${a.time_slot}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div><div>${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div></div>`).join('');
+            } catch(err) {}
+        }
+
         function checkIn() { showToast('Checked In','Arrival confirmed','success'); }
         function cancelBooking() { if (!confirm('Cancel?')) return; document.getElementById('searchCard').style.display = 'block'; document.getElementById('trackingDisplay').style.display = 'none'; if (ws) ws.close(); }
         function shareOnWhatsApp() { if (!currentTracking) return; window.open(`https://wa.me/?text=Apna Bhagalpur:%0A🆔 ${currentTracking.bookingId}%0ATrack: ${window.location.origin}/tracking.html?clinic=${currentTracking.clinicId}&booking=${currentTracking.bookingId}`,'_blank'); }
