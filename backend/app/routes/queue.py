@@ -13,12 +13,17 @@ limiter = Limiter(key_func=get_remote_address)
 
 @router.get('/status/{clinic_id}')
 @limiter.limit("30/minute")
-async def get_queue_status(request: Request, clinic_id: int, db: Session = Depends(get_db)):
-    today = date.today()
+async def get_queue_status(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+    today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: return {'clinic_id': clinic_id, 'current_slot': 0, 'appointments': []}
-    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.slot_number).all()
-    return {'clinic_id': clinic_id, 'current_slot': queue.current_slot_number, 'total_served': queue.total_patients_served, 'total_absent': queue.total_absent, 'total_walkins': queue.total_walkins, 'is_paused': queue.is_paused, 'appointments': [{'id': a.id, 'slot_number': a.slot_number, 'patient_name': a.patient_name, 'status': a.status, 'booking_type': a.booking_type, 'time_slot': a.time_slot} for a in appointments]}
+    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.time_slot).all()
+    return {
+        'clinic_id': clinic_id, 'current_slot': queue.current_slot_number,
+        'total_served': queue.total_patients_served, 'total_absent': queue.total_absent,
+        'total_walkins': queue.total_walkins, 'is_paused': queue.is_paused,
+        'appointments': [{'id': a.id, 'slot_number': a.slot_number, 'patient_name': a.patient_name, 'status': a.status, 'booking_type': a.booking_type, 'time_slot': a.time_slot} for a in appointments]
+    }
 
 
 @router.post('/pause/{clinic_id}')
