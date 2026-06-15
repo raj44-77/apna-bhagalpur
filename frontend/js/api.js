@@ -39,6 +39,10 @@ const API = {
         const res = await fetch(url);
         return res.json();
     },
+    async trackByBooking(clinicId, bookingId) {
+        const res = await fetch(`${API_BASE}/appointments/track-by-booking/${clinicId}?booking_id=${bookingId}`);
+        return res.json();
+    },
     async getMyBookings(phone) {
         const res = await fetch(`${API_BASE}/appointments/my-bookings?phone=${phone}`);
         return res.json();

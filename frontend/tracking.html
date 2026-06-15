@@ -30,14 +30,14 @@
     <section class="page-hero">
         <div class="page-hero-inner">
             <h1>📍 Live Queue Tracking</h1>
-            <p>Real-time updates via WebSocket - No refresh needed!</p>
+            <p>Enter your Booking ID to see real-time queue position</p>
         </div>
     </section>
 
     <section class="section">
         <div class="container-sm">
             <div class="card" id="searchCard">
-                <div class="card-header"><h3>🔍 Find Your Slot</h3></div>
+                <div class="card-header"><h3>🔍 Track Your Position</h3></div>
                 <div class="card-body">
                     <form id="trackForm">
                         <div class="form-group">
@@ -47,8 +47,9 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Your Slot Number *</label>
-                            <input type="number" class="form-control" id="slotInput" placeholder="Enter your slot number" required min="1">
+                            <label class="form-label">Booking ID *</label>
+                            <input type="text" class="form-control" id="bookingInput" placeholder="Enter your Booking ID (e.g., BKG1101)" required>
+                            <small style="color:var(--text-light);">Your Booking ID was given when you booked the appointment</small>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block btn-lg">🔍 Track Now</button>
                     </form>
@@ -59,17 +60,17 @@
                 <div class="grid-3" style="margin-bottom:24px;">
                     <div class="stat-card" style="text-align:center;">
                         <div class="stat-icon" style="background:rgba(59,130,246,0.1);margin:0 auto 12px;">🏃</div>
-                        <div class="stat-label">Current Serving</div>
-                        <div class="stat-value" id="currentSlot" style="color:var(--primary);">-</div>
+                        <div class="stat-label">Queue Position</div>
+                        <div class="stat-value" id="queuePosition" style="color:var(--primary);">-</div>
                     </div>
                     <div class="stat-card" style="text-align:center;">
                         <div class="stat-icon" style="background:rgba(16,185,129,0.1);margin:0 auto 12px;">🎯</div>
-                        <div class="stat-label">Your Slot</div>
-                        <div class="stat-value" id="yourSlot" style="color:var(--success);">-</div>
+                        <div class="stat-label">Your Time</div>
+                        <div class="stat-value" id="yourTime" style="color:var(--success);font-size:1.2rem;">-</div>
                     </div>
                     <div class="stat-card" style="text-align:center;">
                         <div class="stat-icon" style="background:rgba(245,158,11,0.1);margin:0 auto 12px;">👥</div>
-                        <div class="stat-label">Queue Ahead</div>
+                        <div class="stat-label">People Ahead</div>
                         <div class="stat-value" id="queueAhead" style="color:var(--warning);">-</div>
                     </div>
                 </div>
@@ -142,10 +143,10 @@
             }
             const urlParams = new URLSearchParams(window.location.search);
             const clinicId = urlParams.get('clinic');
-            const slotNum = urlParams.get('slot');
+            const bookingId = urlParams.get('booking');
             if (clinicId) document.getElementById('clinicSelect').value = clinicId;
-            if (slotNum) document.getElementById('slotInput').value = slotNum;
-            if (clinicId && slotNum) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
+            if (bookingId) document.getElementById('bookingInput').value = bookingId;
+            if (clinicId && bookingId) setTimeout(() => document.getElementById('trackForm').dispatchEvent(new Event('submit')), 500);
         }
 
         function connectWebSocket(clinicId) {
@@ -166,12 +167,13 @@
         document.getElementById('trackForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const clinicId = parseInt(document.getElementById('clinicSelect').value);
-            const slotNum = parseInt(document.getElementById('slotInput').value);
-            if (!clinicId || !slotNum) { showToast('Error', 'Select clinic and enter slot', 'error'); return; }
+            const bookingId = document.getElementById('bookingInput').value.trim();
+            
+            if (!clinicId || !bookingId) { showToast('Error', 'Select clinic and enter Booking ID', 'error'); return; }
             try {
-                const data = await API.trackQueue(clinicId, slotNum);
-                if (!data || data.detail) { showToast('Not Found', 'No booking found', 'error'); return; }
-                currentTracking = { clinicId, slotNum };
+                const data = await API.trackByBooking(clinicId, bookingId);
+                if (!data || data.detail) { showToast('Not Found', 'Booking not found. Check your Booking ID.', 'error'); return; }
+                currentTracking = { clinicId, bookingId, slotNum: data.slot_number };
                 document.getElementById('searchCard').style.display = 'none';
                 document.getElementById('trackingDisplay').style.display = 'block';
                 await updateTrackingDisplay();
@@ -182,29 +184,36 @@
         async function updateTrackingDisplay() {
             if (!currentTracking) return;
             try {
-                const data = await API.trackQueue(currentTracking.clinicId, currentTracking.slotNum);
-                document.getElementById('currentSlot').textContent = `#${data.current_slot}`;
-                document.getElementById('yourSlot').textContent = `#${data.your_slot}`;
+                const data = await API.trackByBooking(currentTracking.clinicId, currentTracking.bookingId);
+                
+                document.getElementById('queuePosition').textContent = `#${data.queue_position}`;
+                document.getElementById('yourTime').textContent = data.time_slot || '-';
                 document.getElementById('queueAhead').textContent = data.queue_ahead;
 
-                // Fixed progress bar - uses actual queue size
                 const qd = await API.getQueueStatus(currentTracking.clinicId);
                 const totalSlots = (qd.appointments || []).length || 1;
-                const progress = Math.min(100, Math.round((data.current_slot / totalSlots) * 100));
+                const progress = Math.min(100, Math.round((data.queue_position / totalSlots) * 100));
                 const pf = document.getElementById('progressFill');
                 pf.style.width = progress + '%';
                 pf.textContent = progress + '%';
 
-                document.getElementById('waitTime').textContent = data.estimated_wait_string || '--';
+                const waitMinutes = data.queue_ahead * 15;
+                const hours = Math.floor(waitMinutes / 60);
+                const mins = waitMinutes % 60;
+                let timeString = '';
+                if (hours > 0) timeString += `${hours}h `;
+                timeString += `${mins}min`;
+                document.getElementById('waitTime').textContent = timeString;
                 document.getElementById('waitDetail').textContent = `${data.queue_ahead} patient(s) ahead`;
 
                 const sd = document.getElementById('statusMessage');
-                if (data.alert_type === 'success') sd.innerHTML = '<div class="badge badge-success" style="font-size:1rem;">✅ Complete</div>';
-                else if (data.alert_type === 'warning') sd.innerHTML = `<div class="badge badge-warning pulse" style="font-size:1rem;">🔔 ${data.status_message}</div>`;
-                else sd.innerHTML = `<div class="badge badge-primary" style="font-size:1rem;">⏳ ${data.status_message}</div>`;
+                if (data.status === 'completed') sd.innerHTML = '<div class="badge badge-success" style="font-size:1rem;">✅ Complete</div>';
+                else if (data.queue_ahead === 0 && data.status === 'current') sd.innerHTML = '<div class="badge badge-warning pulse" style="font-size:1rem;">🔔 Your turn now!</div>';
+                else if (data.queue_ahead <= 3) sd.innerHTML = '<div class="badge badge-warning" style="font-size:1rem;">⚠️ Almost there!</div>';
+                else sd.innerHTML = '<div class="badge badge-primary" style="font-size:1rem;">⏳ In queue</div>';
 
                 document.getElementById('queueList').innerHTML = (qd.appointments || []).map(a => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}${a.slot_number===data.current_slot&&a.status==='current'?'background:#fefce8;':''}">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border);${a.slot_number===currentTracking.slotNum?'border-left:4px solid var(--primary);background:var(--secondary);':''}">
                         <div><strong>#${a.slot_number}</strong> - ${(a.patient_name||'').split(' ')[0]} ${a.booking_type==='walkin'?'🚶':''}</div>
                         <div style="display:flex;gap:8px;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}</div>
                     </div>
@@ -221,7 +230,7 @@
         }
         function shareOnWhatsApp() {
             if (!currentTracking) return;
-            const text = `Apna Bhagalpur Appointment:%0A🔢 Slot: #${currentTracking.slotNum}%0ATrack: ${window.location.origin}/tracking.html?clinic=${currentTracking.clinicId}&slot=${currentTracking.slotNum}`;
+            const text = `Apna Bhagalpur Appointment:%0A🆔 Booking: ${currentTracking.bookingId}%0ATrack: ${window.location.origin}/tracking.html?clinic=${currentTracking.clinicId}&booking=${currentTracking.bookingId}`;
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
 

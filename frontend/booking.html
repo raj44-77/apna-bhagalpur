@@ -205,22 +205,23 @@
                 submitBtn.innerHTML = '✅ Confirm Booking';
             }
         });
-
         function showConfirmation(booking) {
-            document.getElementById('bookingFormCard').style.display = 'none';
-            document.getElementById('confirmationCard').style.display = 'block';
-            document.getElementById('bookingDetails').innerHTML = `
-                <p><strong>Booking ID:</strong> ${booking.booking_id}</p>
-                <p><strong>Slot Number:</strong> <span style="font-size:1.2rem;color:var(--primary);font-weight:700;">#${booking.slot_number}</span></p>
-                <p><strong>Patient:</strong> ${booking.patient_name} ${booking.patient_age ? '('+booking.patient_age+'y)' : ''} ${booking.patient_gender || ''}</p>
-                <p><strong>Clinic:</strong> ${booking.clinic_name}</p>
-                <p><strong>Doctor:</strong> ${booking.doctor_name}</p>
-                <p><strong>Date:</strong> ${formatDate(booking.appointment_date)}</p>
-                <p><strong>Time:</strong> ${booking.time_slot}</p>
-                <p>${getStatusBadge(booking.status)}</p>
-            `;
-            document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&slot=${booking.slot_number}`;
-        }
+    document.getElementById('bookingFormCard').style.display = 'none';
+    document.getElementById('confirmationCard').style.display = 'block';
+    document.getElementById('bookingDetails').innerHTML = `
+        <p><strong>🆔 Booking ID:</strong> <span style="font-size:1.5rem;color:var(--primary);font-weight:700;">${booking.booking_id}</span></p>
+        <p style="font-size:0.85rem;color:var(--text-light);">Save this ID to track your queue position</p>
+        <div class="divider"></div>
+        <p><strong>👤 Patient:</strong> ${booking.patient_name} ${booking.patient_age ? '('+booking.patient_age+'y)' : ''} ${booking.patient_gender || ''}</p>
+        <p><strong>🏥 Clinic:</strong> ${booking.clinic_name}</p>
+        <p><strong>👨‍⚕️ Doctor:</strong> ${booking.doctor_name}</p>
+        <p><strong>📅 Date:</strong> ${formatDate(booking.appointment_date)}</p>
+        <p><strong>🕐 Time:</strong> ${booking.time_slot}</p>
+        <p><strong>🔢 Slot:</strong> #${booking.slot_number}</p>
+        <p>${getStatusBadge(booking.status)}</p>
+    `;
+    document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&booking=${booking.booking_id}`;
+}
 
         function bookAnother() {
             document.getElementById('bookingFormCard').style.display = 'block';
