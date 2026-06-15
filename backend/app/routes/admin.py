@@ -17,14 +17,14 @@ limiter = Limiter(key_func=get_remote_address)
 
 def to_minutes(time_str):
     """Convert time like '09:30 AM' to minutes since midnight"""
-    if not time_str: return 0
+    if not time_str: return 9999
     try:
         t, period = time_str.strip().split()
         h, m = map(int, t.split(':'))
         if period == 'PM' and h != 12: h += 12
         if period == 'AM' and h == 12: h = 0
         return h * 60 + m
-    except: return 0
+    except: return 9999
 
 
 @router.post("/next-slot/{clinic_id}")
@@ -33,8 +33,12 @@ async def next_slot(request: Request, clinic_id: int, appointment_date: str = No
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
-    # Find next by EARLIEST time
-    next_patient = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "waiting").order_by(Appointment.time_slot, Appointment.id).first()
+    
+    # Get all waiting and sort by time in Python (proper AM/PM)
+    waiting = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "waiting").all()
+    waiting.sort(key=lambda a: to_minutes(a.time_slot))
+    next_patient = waiting[0] if waiting else None
+    
     if next_patient:
         next_patient.status = "current"
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
@@ -86,7 +90,9 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
 async def get_dashboard(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
-    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.time_slot, Appointment.id).all()
+    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).all()
+    # Sort by time in Python
+    appointments.sort(key=lambda a: to_minutes(a.time_slot))
     current = None
     for a in appointments:
         if a.status == "current": current = a; break
@@ -127,7 +133,8 @@ async def is_queue_locked(clinic_id: int, appointment_date: str = None, db: Sess
 @router.get("/absentees/{clinic_id}")
 async def get_absentees(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
-    absentees = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "absent").order_by(Appointment.slot_number).all()
+    absentees = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "absent").all()
+    absentees.sort(key=lambda a: to_minutes(a.time_slot))
     return [{"id": a.id, "booking_id": a.booking_id, "slot_number": a.slot_number, "patient_name": a.patient_name, "patient_phone": a.patient_phone, "time_slot": a.time_slot} for a in absentees]
 
 
