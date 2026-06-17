@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Apna Bhagalpur - Doctor Appointment System</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .hero-bg {
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='80' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='2'/%3E%3Ccircle cx='100' cy='100' r='50' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='2'/%3E%3Ccircle cx='100' cy='100' r='20' fill='none' stroke='rgba(255,255,255,0.1)' stroke-width='2'/%3E%3Cline x1='20' y1='100' x2='180' y2='100' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3Cline x1='100' y1='20' x2='100' y2='180' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            animation: heroFloat 20s linear infinite;
+            opacity: 0.6;
+        }
+        @keyframes heroFloat {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -27,7 +47,7 @@
         </div>
     </nav>
 
-    <section class="page-hero" style="padding: 80px 24px;">
+    <section class="page-hero hero-bg" style="padding: 80px 24px;">
         <div class="page-hero-inner" style="text-align: center;">
             <h1 style="font-size: 2.8rem; margin-bottom: 16px;">🏥 Apna Bhagalpur</h1>
             <p style="font-size: 1.3rem; margin-bottom: 8px; font-weight: 600;">Bhagalpur ka apna doctor appointment system</p>
@@ -72,7 +92,6 @@
         </div>
     </section>
 
-    <!-- Top Clinics Rankings Section -->
     <section class="section" style="background: white;">
         <div class="container">
             <div class="section-header">
