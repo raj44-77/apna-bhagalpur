@@ -31,7 +31,6 @@
         <div id="resultsSection" style="display:none;"><h3 style="margin-bottom:16px;" id="resultsTitle"></h3><div id="bookingsList"></div></div>
     </div></section>
 
-    <!-- Revisit Modal -->
     <div class="modal-overlay hidden" id="revisitModal">
         <div class="modal"><div class="modal-header"><h3>🔄 Book Revisit (Free Follow-up)</h3><button class="modal-close" onclick="hideModal('revisitModal')">×</button></div>
         <div class="modal-body"><form id="revisitForm">
@@ -57,13 +56,15 @@
             rs.style.display = 'block'; rt.textContent = 'Loading...'; bl.innerHTML = '<p>Searching...</p>';
             try {
                 const myBookings = await API.getMyBookings(phone);
+                const today = new Date().toISOString().split('T')[0];
                 if (myBookings.length === 0) {
                     rt.textContent = 'No Bookings Found';
                     bl.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><div class="empty-icon">📭</div><h3>No Bookings Found</h3><p>No appointments found for ${phone}</p><a href="booking.html" class="btn btn-primary">📅 Book Appointment</a></div></div></div>`;
                 } else {
                     rt.textContent = `Found ${myBookings.length} booking(s) for ${phone}`;
                     bl.innerHTML = myBookings.map(b => {
-                        const daysAgo = b.appointment_date ? Math.floor((new Date() - new Date(b.appointment_date)) / (1000*60*60*24)) : 999;
+                        const isPast = b.appointment_date < today;
+                        const canTrack = (b.status === 'waiting' || b.status === 'current') && !isPast;
                         return `<div class="card" style="margin-bottom:16px;"><div class="card-body">
                             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
                                 <div style="flex:1;">
@@ -74,12 +75,13 @@
                                     </div>
                                     <p style="margin:4px 0;color:var(--text-light);">👨‍⚕️ ${b.doctor_name || 'N/A'}</p>
                                     <p style="margin:4px 0;color:var(--text-light);">📅 ${b.appointment_date} | 🕐 ${b.time_slot}</p>
+                                    ${isPast ? '<span class="badge badge-gray">📅 Past</span>' : ''}
                                 </div>
                                 <div style="text-align:right;">${getStatusBadge(b.status)}<div style="margin-top:4px;">${getTypeBadge(b.booking_type)}</div></div>
                             </div>
                             <div class="divider"></div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                ${(b.status === 'waiting' || b.status === 'current') ? `<a href="tracking.html?clinic=${b.clinic_id}&booking=${b.booking_id}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
+                                ${canTrack ? `<a href="tracking.html?clinic=${b.clinic_id}&booking=${b.booking_id}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
                                 ${b.is_revisit_available ? `<button class="btn btn-warning btn-sm" onclick="openRevisit(${b.clinic_id},${b.doctor_id},'${b.patient_name}','${b.patient_phone}')">🔄 Book Revisit (Free)</button>` : ''}
                                 ${b.booking_type === 'revisit' ? '<span class="badge badge-success">💰 Free Visit</span>' : ''}
                             </div>
