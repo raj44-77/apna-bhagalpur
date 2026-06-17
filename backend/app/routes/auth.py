@@ -14,14 +14,13 @@ from ..models.verification_code import VerificationCode
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-# JWT Config
 SECRET_KEY = "apna-bhagalpur-jwt-secret-2024"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 
 class LoginData(BaseModel):
-    email: str  # Can be email OR phone
+    email: str
     password: str
 
 
@@ -90,6 +89,21 @@ async def login(request: Request, data: LoginData, db: Session = Depends(get_db)
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/google-login")
+async def google_login(data: dict, db: Session = Depends(get_db)):
+    try:
+        email = data.get("email")
+        name = data.get("name", "Google User")
+        google_id = data.get("google_id", "")
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            user = User(name=name, email=email, phone=f"gg{google_id[:8]}", password=hash_password(google_id), user_type="patient")
+            db.add(user); db.commit(); db.refresh(user)
+        access_token = create_access_token(user.id, user.user_type)
+        return {"access_token": access_token, "token_type": "bearer", "user": {"id": user.id, "name": user.name, "email": user.email, "phone": user.phone, "user_type": user.user_type, "clinic_id": user.clinic_id, "clinic_name": None, "age": user.age, "gender": user.gender, "is_active": bool(user.is_active), "created_at": str(user.created_at)}}
+    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/register/patient")
 @limiter.limit("3/hour")
 async def register_patient(request: Request, data: dict, db: Session = Depends(get_db)):
@@ -101,7 +115,6 @@ async def register_patient(request: Request, data: dict, db: Session = Depends(g
         gender = data.get("gender")
         if not validate_name(name): raise HTTPException(status_code=400, detail="Name must be at least 3 characters")
         if not validate_password(password): raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-        
         if is_email(login_value):
             if not validate_email(login_value): raise HTTPException(status_code=400, detail="Invalid email format")
             email = login_value.lower()
@@ -111,7 +124,6 @@ async def register_patient(request: Request, data: dict, db: Session = Depends(g
             vcode = VerificationCode(email=email, code=code, code_type="email_verify", user_data=user_data, expires_at=datetime.utcnow() + timedelta(minutes=10))
             db.add(vcode); db.commit()
             return {"message": "Verification code sent", "code": code, "email": email, "step": "verify_email"}
-            
         elif is_phone(login_value):
             if not is_valid_indian_mobile(login_value): raise HTTPException(status_code=400, detail="Invalid phone number")
             if db.query(User).filter(User.phone == login_value).first(): raise HTTPException(status_code=400, detail="Phone already registered")
