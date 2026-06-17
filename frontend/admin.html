@@ -30,7 +30,7 @@
     <section class="page-hero">
         <div class="page-hero-inner">
             <h1>👨‍⚕️ Admin Dashboard</h1>
-            <p>Manage your clinic queue - patients served in time order</p>
+            <p id="pageSubtitle">Manage your clinic queue - patients served in time order</p>
         </div>
     </section>
 
@@ -53,6 +53,18 @@
             </div>
 
             <div id="dashboardContent" style="display:none;">
+                <div id="lockedAlert" style="display:none;margin-bottom:16px;">
+                    <div class="card" style="border-left:4px solid var(--warning);">
+                        <div class="card-body" style="padding:12px 16px;display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:1.5rem;">🔒</span>
+                            <div>
+                                <strong>Past Date - Read Only</strong>
+                                <p style="font-size:0.85rem;color:var(--text-light);margin:0;">This date has passed. Actions are disabled to protect historical data.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid-2" style="margin-bottom:24px;">
                     <div class="card">
                         <div class="card-header"><h3>🔔 Currently Serving</h3></div>
@@ -62,17 +74,17 @@
                     </div>
                     <div class="card">
                         <div class="card-header"><h3>⚡ Actions</h3></div>
-                        <div class="card-body">
+                        <div class="card-body" id="actionsCard">
                             <button class="btn btn-info btn-block" id="startBtn" onclick="startConsultation()" style="margin-bottom:12px;background:#8B5CF6;color:white;border:none;display:none;">▶️ Start Consultation</button>
-                            <button class="btn btn-primary btn-block" onclick="nextSlot()" style="margin-bottom:12px;">⏭️ Next Slot</button>
-                            <button class="btn btn-danger btn-block" onclick="showModal('absentModal')" style="margin-bottom:12px;">❌ Mark Absent</button>
-                            <button class="btn btn-success btn-block" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
-                            <button class="btn btn-warning btn-block" id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
+                            <button class="btn btn-primary btn-block action-btn" onclick="nextSlot()" style="margin-bottom:12px;">⏭️ Next Slot</button>
+                            <button class="btn btn-danger btn-block action-btn" onclick="showModal('absentModal')" style="margin-bottom:12px;">❌ Mark Absent</button>
+                            <button class="btn btn-success btn-block action-btn" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
+                            <button class="btn btn-warning btn-block action-btn" id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
                             <button class="btn btn-outline btn-block" onclick="toggleAdvanced()" style="margin-top:12px;">⚙️ Advanced Features ▾</button>
                             <div id="advancedFeatures" style="display:none;">
-                                <button class="btn btn-outline btn-block" id="lockBtn" onclick="toggleLock()" style="margin-top:12px;">🔒 Lock Queue</button>
-                                <button class="btn btn-block" onclick="showModal('notifyModal')" style="margin-top:12px;background:#25D366;color:white;border:none;">📢 Notify All Patients</button>
-                                <button class="btn btn-outline btn-block" onclick="downloadPDF()" style="margin-top:12px;">📥 Download Queue (PDF)</button>
+                                <button class="btn btn-outline btn-block action-btn" id="lockBtn" onclick="toggleLock()" style="margin-top:12px;">🔒 Lock Queue</button>
+                                <button class="btn btn-block action-btn" onclick="showModal('notifyModal')" style="margin-top:12px;background:#25D366;color:white;border:none;">📢 Notify All Patients</button>
+                                <button class="btn btn-outline btn-block action-btn" onclick="downloadPDF()" style="margin-top:12px;">📥 Download Queue (PDF)</button>
                                 <a href="admin-analytics.html" class="btn btn-outline btn-block" style="margin-top:12px;">📊 View Analytics</a>
                             </div>
                         </div>
@@ -109,9 +121,20 @@
         let currentClinicId = null, dashboardData = null, timerInterval = null, seconds = 0, isPaused = false, consultationStarted = false;
 
         function getSelectedDate() { return document.getElementById('adminDate').value || null; }
-        function initClinic() { const user = AuthStore.getCurrentUser(); if (!user || user.user_type !== 'clinic') { window.location.href = 'login.html'; return; } currentClinicId = user.clinic_id; document.getElementById('adminClinicName').value = '🏥 ' + (user.clinic_name || 'Your Clinic'); document.getElementById('dashboardContent').style.display = 'block'; loadDoctors(); loadDashboard(); }
+        function isToday() { const s = getSelectedDate(); if (!s) return true; return s === new Date().toISOString().split('T')[0]; }
+        function isPastDate() { const s = getSelectedDate(); if (!s) return false; return s < new Date().toISOString().split('T')[0]; }
+
+        function updateActionButtons() {
+            const past = isPastDate();
+            document.getElementById('lockedAlert').style.display = past ? 'block' : 'none';
+            document.getElementById('pageSubtitle').textContent = past ? 'Viewing historical data - Actions are locked' : 'Manage your clinic queue - patients served in time order';
+            document.querySelectorAll('.action-btn').forEach(btn => { btn.style.display = past ? 'none' : ''; });
+            const startBtn = document.getElementById('startBtn'); if (startBtn && past) startBtn.style.display = 'none';
+        }
+
+        function initClinic() { const user = AuthStore.getCurrentUser(); if (!user || user.user_type !== 'clinic') { window.location.href = 'login.html'; return; } currentClinicId = user.clinic_id; document.getElementById('adminClinicName').value = '🏥 ' + (user.clinic_name || 'Your Clinic'); document.getElementById('dashboardContent').style.display = 'block'; loadDoctors(); loadDashboard(); updateActionButtons(); }
         async function loadDoctors() { try { const doctors = await API.getDoctors(currentClinicId); const ds = document.getElementById('walkinDoctor'); ds.innerHTML = '<option value="">Select...</option>'; doctors.forEach(d => ds.innerHTML += `<option value="${d.id}">${d.name} - ${d.specialty}</option>`); } catch(e) {} }
-        document.getElementById('adminDate').addEventListener('change', function() { if (currentClinicId) { seconds = 0; consultationStarted = false; stopTimer(); loadDashboard(); } });
+        document.getElementById('adminDate').addEventListener('change', function() { if (currentClinicId) { seconds = 0; consultationStarted = false; stopTimer(); updateActionButtons(); loadDashboard(); } });
         async function loadDashboard() { if (!currentClinicId) return; try { dashboardData = await API.getDashboard(currentClinicId, getSelectedDate()); updateUI(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
 
         function updateUI() {
@@ -121,20 +144,18 @@
             const s = document.getElementById('currentPatientSection');
             if (c && c.slot_number) { 
                 const serialNum = apps.findIndex(a => a.slot_number === c.slot_number) + 1;
-                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p><div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div></div>`; 
+                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p>${!isPastDate() ? '<div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>' : ''}</div>`; 
             } else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; stopTimer(); }
             
             document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map((a, index) => {
                 let actionButtons = '';
-                if (a.status === 'absent') {
+                if (a.status === 'absent' && !isPastDate()) {
                     actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`;
                 }
+                const canDelete = (a.status === 'waiting' || a.status === 'completed') && !isPastDate();
                 return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}">
                     <div style="flex:1;"><strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>${actionButtons}</div>
-                    <div style="display:flex;gap:8px;align-items:center;">
-                        ${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}
-                        ${(a.status === 'waiting' || a.status === 'completed') ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}
-                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}${canDelete ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}</div>
                 </div>`;
             }).join('');
             
@@ -142,48 +163,25 @@
             document.getElementById('statAbsent').textContent = dashboardData?.stats?.absent || 0;
             document.getElementById('statWalkins').textContent = dashboardData?.queue?.total_walkins || 0;
             const lb = document.getElementById('lockBtn'); if (lb) { lb.textContent = dashboardData?.is_locked ? '🔓 Unlock Queue' : '🔒 Lock Queue'; lb.className = dashboardData?.is_locked ? 'btn btn-success btn-block' : 'btn btn-outline btn-block'; lb.style.marginTop = '12px'; }
-            const startBtn = document.getElementById('startBtn'); if (startBtn) { startBtn.style.display = (c && c.slot_number && !consultationStarted && !timerInterval) ? 'block' : 'none'; }
+            const startBtn = document.getElementById('startBtn'); if (startBtn && !isPastDate()) { startBtn.style.display = (c && c.slot_number && !consultationStarted && !timerInterval) ? 'block' : 'none'; }
         }
 
         async function deleteAppointment(appointmentId) {
             if (!confirm('Delete this booking? This cannot be undone.')) return;
-            try {
-                const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' });
-                const result = await res.json();
-                if (result.message) { showToast('Deleted', result.message, 'success'); await loadDashboard(); }
-                else { showToast('Error', 'Failed to delete', 'error'); }
-            } catch(e) { showToast('Error', 'Failed', 'error'); }
+            try { const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' }); const result = await res.json(); if (result.message) { showToast('Deleted', result.message, 'success'); await loadDashboard(); } else { showToast('Error', 'Failed to delete', 'error'); } } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
         function toggleAdvanced() { const d = document.getElementById('advancedFeatures'); const b = event.target; if (d.style.display === 'none' || d.style.display === '') { d.style.display = 'block'; b.textContent = '⚙️ Advanced Features ▴'; } else { d.style.display = 'none'; b.textContent = '⚙️ Advanced Features ▾'; } }
-        function startConsultation() { consultationStarted = true; seconds = 0; document.getElementById('startBtn').style.display = 'none'; startTimer(); showToast('Started', 'Consultation started', 'success'); }
+        function startConsultation() { if (isPastDate()) return; consultationStarted = true; seconds = 0; document.getElementById('startBtn').style.display = 'none'; startTimer(); showToast('Started', 'Consultation started', 'success'); }
         function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
-        function startTimer() { stopTimer(); if (dashboardData?.current_patient && !isPaused) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
-        async function nextSlot() { if (!currentClinicId) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function markAbsent() { if (!currentClinicId) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        
-        async function addWalkIn() { 
-            const n = document.getElementById('walkinName').value.trim(), 
-                  p = document.getElementById('walkinPhone').value.trim(), 
-                  d = parseInt(document.getElementById('walkinDoctor').value); 
-            if (!n || !d) { showToast('Error', 'Fill all fields', 'error'); return; }
-            const selectedDate = getSelectedDate();
-            const today = new Date().toISOString().split('T')[0];
-            if (selectedDate && selectedDate < today) {
-                showToast('Error', 'Cannot add walk-in for past dates.', 'error');
-                return;
-            }
-            try { 
-                await API.addWalkin(currentClinicId, { doctor_id: d, patient_name: n, patient_phone: p || '' }, selectedDate); 
-                hideModal('walkinModal'); document.getElementById('walkinForm').reset(); 
-                showToast('Added', `${n} added`, 'success'); await loadDashboard(); 
-            } catch(e) { showToast('Error', 'Failed', 'error'); } 
-        }
-        
-        async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; startTimer(); } } catch(e) {} }
-        async function toggleLock() { if (!currentClinicId) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function startTreatmentAbsent(id) { if (!confirm('Move back to queue?')) return; try { const r = await API.startTreatment(id); showToast('Done', r.message, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        function showReschedule(id) { const d = prompt('Enter new date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]); if (!d) return; rescheduleAbsent(id, d); }
+        function startTimer() { stopTimer(); if (dashboardData?.current_patient && !isPaused && !isPastDate()) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
+        async function nextSlot() { if (!currentClinicId || isPastDate()) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function markAbsent() { if (!currentClinicId || isPastDate()) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function addWalkIn() { if (isPastDate()) { showToast('Error', 'Cannot modify past dates', 'error'); return; } const n = document.getElementById('walkinName').value.trim(), p = document.getElementById('walkinPhone').value.trim(), d = parseInt(document.getElementById('walkinDoctor').value); if (!n || !d) { showToast('Error', 'Fill all fields', 'error'); return; } try { await API.addWalkin(currentClinicId, { doctor_id: d, patient_name: n, patient_phone: p || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${n} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function togglePause() { if (isPastDate()) return; try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; startTimer(); } } catch(e) {} }
+        async function toggleLock() { if (!currentClinicId || isPastDate()) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function startTreatmentAbsent(id) { if (isPastDate()) return; if (!confirm('Move back to queue?')) return; try { const r = await API.startTreatment(id); showToast('Done', r.message, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        function showReschedule(id) { if (isPastDate()) return; const d = prompt('Enter new date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]); if (!d) return; rescheduleAbsent(id, d); }
         async function rescheduleAbsent(id, date) { try { const r = await API.rescheduleAppointment(id, date); showToast('Rescheduled', r.message, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         function setTemplate() { const v = document.getElementById('msgTemplate').value; if (v && v !== 'custom') document.getElementById('notifyMessage').value = v; }
         function prepareNotify() { document.getElementById('notifyDate').textContent = getSelectedDate() || new Date().toISOString().split('T')[0]; document.getElementById('notifyCount').textContent = (dashboardData?.appointments||[]).filter(a => a.status==='waiting'||a.status==='current').length; }
@@ -192,6 +190,7 @@
         
         const origShow = showModal; 
         showModal = function(id) { 
+            if (isPastDate() && id !== 'notifyModal') { showToast('Locked', 'Cannot modify past dates', 'warning'); return; }
             if (id === 'notifyModal') prepareNotify(); 
             if (id === 'walkinModal') { document.getElementById('adminDate').value = new Date().toISOString().split('T')[0]; }
             origShow(id); 
