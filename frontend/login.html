@@ -100,7 +100,7 @@
         }
 
         function googleLogin() {
-            const redirectUri = window.location.origin;
+            const redirectUri = window.location.origin + '/login.html';
             const scope = 'email profile';
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=select_account`;
             window.location.href = authUrl;
@@ -119,9 +119,9 @@
                     .then(r => r.json())
                     .then(user => {
                         if (user.email) { handleGoogleUser(user); }
-                        else { showToast('Error', 'Failed to get Google account', 'error'); window.location.hash = ''; location.reload(); }
+                        else { window.location.hash = ''; location.reload(); }
                     })
-                    .catch(() => { showToast('Error', 'Google login failed', 'error'); window.location.hash = ''; location.reload(); });
+                    .catch(() => { window.location.hash = ''; location.reload(); });
                 }
             }
         })();
@@ -143,8 +143,8 @@
                         else if (result.user.user_type === 'clinic') window.location.href = 'admin.html';
                         else window.location.href = 'booking.html';
                     }, 1000);
-                } else { showToast('Error', 'Google login failed', 'error'); location.reload(); }
-            } catch(e) { showToast('Error', 'Google login failed', 'error'); location.reload(); }
+                } else { location.reload(); }
+            } catch(e) { location.reload(); }
         }
 
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
