@@ -130,14 +130,9 @@
                     actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`;
                 }
                 return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}">
-                    <div style="flex:1;">
-                        <strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}
-                        <div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>
-                        ${actionButtons}
-                    </div>
+                    <div style="flex:1;"><strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>${actionButtons}</div>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        ${getTypeBadge(a.booking_type)}
-                        ${getStatusBadge(a.status)}
+                        ${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}
                         ${(a.status === 'waiting' || a.status === 'completed') ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}
                     </div>
                 </div>`;
@@ -162,12 +157,29 @@
 
         function toggleAdvanced() { const d = document.getElementById('advancedFeatures'); const b = event.target; if (d.style.display === 'none' || d.style.display === '') { d.style.display = 'block'; b.textContent = '⚙️ Advanced Features ▴'; } else { d.style.display = 'none'; b.textContent = '⚙️ Advanced Features ▾'; } }
         function startConsultation() { consultationStarted = true; seconds = 0; document.getElementById('startBtn').style.display = 'none'; startTimer(); showToast('Started', 'Consultation started', 'success'); }
-        function stopTimer() { clearInterval(timerInterval); timerInterval = null; consultationStarted = false; }
+        function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
         function startTimer() { stopTimer(); if (dashboardData?.current_patient && !isPaused) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
         async function nextSlot() { if (!currentClinicId) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function markAbsent() { if (!currentClinicId) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function addWalkIn() { const n = document.getElementById('walkinName').value.trim(), p = document.getElementById('walkinPhone').value.trim(), d = parseInt(document.getElementById('walkinDoctor').value); if (!n || !d) { showToast('Error', 'Fill all fields', 'error'); return; } try { await API.addWalkin(currentClinicId, { doctor_id: d, patient_name: n, patient_phone: p || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${n} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function togglePause() { try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; if (consultationStarted) startTimer(); } } catch(e) {} }
+        
+        async function togglePause() { 
+            try { 
+                const r = await API.togglePause(currentClinicId); 
+                isPaused = r.is_paused; 
+                const b = document.getElementById('pauseBtn'); 
+                if (isPaused) { 
+                    b.textContent = '▶️ Resume'; 
+                    b.className = 'btn btn-success btn-block'; 
+                    stopTimer(); 
+                } else { 
+                    b.textContent = '⏸️ Pause'; 
+                    b.className = 'btn btn-warning btn-block'; 
+                    startTimer(); 
+                } 
+            } catch(e) {} 
+        }
+        
         async function toggleLock() { if (!currentClinicId) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function startTreatmentAbsent(id) { if (!confirm('Move back to queue?')) return; try { const r = await API.startTreatment(id); showToast('Done', r.message, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         function showReschedule(id) { const d = prompt('Enter new date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]); if (!d) return; rescheduleAbsent(id, d); }
