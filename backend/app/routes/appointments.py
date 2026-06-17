@@ -52,7 +52,7 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         
         count = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).count()
         slot_num = count + 1
-        booking_id = f"B{slot_num:03d}"
+        booking_id = f"R{clinic_id}{slot_num:03d}"
         
         appointment = Appointment(
             booking_id=booking_id, clinic_id=data.clinic_id, doctor_id=data.doctor_id,
