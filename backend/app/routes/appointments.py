@@ -27,7 +27,6 @@ class BookingData(BaseModel):
 
 
 def to_minutes(time_str):
-    """Convert time like '09:30 AM' to minutes since midnight"""
     if not time_str: return 9999
     try:
         t, period = time_str.strip().split()
@@ -52,7 +51,7 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         
         count = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).count()
         slot_num = count + 1
-        booking_id = f"R{clinic_id}{slot_num:03d}"
+        booking_id = f"B{slot_num:03d}"
         
         appointment = Appointment(
             booking_id=booking_id, clinic_id=data.clinic_id, doctor_id=data.doctor_id,
@@ -100,7 +99,6 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         appointment_date = data.get("appointment_date")
         time_slot = data.get("time_slot")
         
-        # Check if patient has a completed visit in last 15 days
         fifteen_days_ago = date.today() - timedelta(days=15)
         original_visit = db.query(Appointment).filter(
             Appointment.clinic_id == clinic_id,
@@ -113,7 +111,6 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         if not original_visit:
             raise HTTPException(status_code=400, detail="No eligible visit found. Revisit is valid only within 15 days of your last visit.")
         
-        # Check if revisit already used
         already_revisited = db.query(Appointment).filter(
             Appointment.clinic_id == clinic_id,
             Appointment.patient_phone == patient_phone,
@@ -126,7 +123,7 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment_date).count()
         slot_num = count + 1
-        booking_id = f"R{slot_num:03d}"
+        booking_id = f"R{clinic_id}{slot_num:03d}"
         
         appointment = Appointment(
             booking_id=booking_id, clinic_id=clinic_id, doctor_id=doctor_id,
@@ -217,7 +214,6 @@ async def my_bookings(request: Request, phone: str, db: Session = Depends(get_db
         if a.status == "completed" and a.booking_type != "revisit":
             days_since = (date.today() - a.appointment_date).days if a.appointment_date else 999
             if days_since <= 15:
-                # Check if revisit already used
                 already = db.query(Appointment).filter(
                     Appointment.clinic_id == a.clinic_id,
                     Appointment.patient_phone == phone,
