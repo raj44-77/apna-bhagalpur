@@ -10,11 +10,8 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="index.html" class="nav-brand">
-               <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px; width:auto; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.2); padding:3px; background:white;">
-                <div>
-                    <div class="brand-name">Apna Bhagalpur</div>
-                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
-                </div>
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
+                <div><div class="brand-name">Apna Bhagalpur</div><div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div></div>
             </a>
             <ul class="nav-links">
                 <li><a href="index.html">🏠 Home</a></li>
@@ -27,41 +24,26 @@
         </div>
     </nav>
 
-    <section class="page-hero">
-        <div class="page-hero-inner">
-            <h1>📋 My Bookings</h1>
-            <p>View all your appointments by phone number</p>
-        </div>
-    </section>
+    <section class="page-hero"><div class="page-hero-inner"><h1>📋 My Bookings</h1><p>View all your appointments by phone number</p></div></section>
 
-    <section class="section">
-        <div class="container-sm">
-            <div class="card" style="margin-bottom:24px;">
-                <div class="card-header"><h3>🔍 Search Your Bookings</h3></div>
-                <div class="card-body">
-                    <form id="searchForm">
-                        <div class="form-group">
-                            <label class="form-label">Enter Your Phone Number *</label>
-                            <input type="tel" class="form-control" id="phoneSearch" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">🔍 Search Bookings</button>
-                    </form>
-                </div>
-            </div>
+    <section class="section"><div class="container-sm">
+        <div class="card" style="margin-bottom:24px;"><div class="card-header"><h3>🔍 Search Your Bookings</h3></div><div class="card-body"><form id="searchForm"><div class="form-group"><label class="form-label">Enter Your Phone Number *</label><input type="tel" class="form-control" id="phoneSearch" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10"></div><button type="submit" class="btn btn-primary btn-block">🔍 Search Bookings</button></form></div></div>
+        <div id="resultsSection" style="display:none;"><h3 style="margin-bottom:16px;" id="resultsTitle"></h3><div id="bookingsList"></div></div>
+    </div></section>
 
-            <div id="resultsSection" style="display:none;">
-                <h3 style="margin-bottom:16px;" id="resultsTitle"></h3>
-                <div id="bookingsList"></div>
-            </div>
-        </div>
-    </section>
+    <!-- Revisit Modal -->
+    <div class="modal-overlay hidden" id="revisitModal">
+        <div class="modal"><div class="modal-header"><h3>🔄 Book Revisit (Free Follow-up)</h3><button class="modal-close" onclick="hideModal('revisitModal')">×</button></div>
+        <div class="modal-body"><form id="revisitForm">
+            <input type="hidden" id="revisitClinicId"><input type="hidden" id="revisitDoctorId"><input type="hidden" id="revisitPatientName"><input type="hidden" id="revisitPatientPhone">
+            <div class="form-group"><label class="form-label">Appointment Date *</label><input type="date" class="form-control" id="revisitDate" required></div>
+            <div class="form-group"><label class="form-label">Preferred Time *</label><select class="form-control" id="revisitTime" required></select></div>
+            <p style="font-size:0.85rem;color:var(--success);">💰 Free follow-up visit - No payment needed!</p>
+        </form></div>
+        <div class="modal-footer"><button class="btn btn-outline" onclick="hideModal('revisitModal')">Cancel</button><button class="btn btn-primary" onclick="confirmRevisit()">✅ Confirm Revisit</button></div></div>
+    </div>
 
-    <footer class="footer">
-        <div class="footer-inner">
-            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare booking platform</p></div>
-            <div class="footer-bottom"><p>© 2024 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p></div>
-        </div>
-    </footer>
+    <footer class="footer"><div class="footer-inner"><div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div><div class="footer-bottom"><p>© 2024 Apna Bhagalpur</p></div></div></footer>
 
     <script src="js/app.js"></script>
     <script src="js/api.js"></script>
@@ -70,76 +52,75 @@
         document.getElementById('searchForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const phone = document.getElementById('phoneSearch').value.trim();
-            
-            if (phone.length !== 10) {
-                showToast('Error', 'Please enter a valid 10-digit phone number', 'error');
-                return;
-            }
-
-            const resultsSection = document.getElementById('resultsSection');
-            const resultsTitle = document.getElementById('resultsTitle');
-            const bookingsList = document.getElementById('bookingsList');
-            
-            resultsSection.style.display = 'block';
-            resultsTitle.textContent = 'Loading...';
-            bookingsList.innerHTML = '<p>Searching...</p>';
-
+            if (phone.length !== 10) { showToast('Error', 'Enter a valid 10-digit phone number', 'error'); return; }
+            const rs = document.getElementById('resultsSection'), rt = document.getElementById('resultsTitle'), bl = document.getElementById('bookingsList');
+            rs.style.display = 'block'; rt.textContent = 'Loading...'; bl.innerHTML = '<p>Searching...</p>';
             try {
                 const myBookings = await API.getMyBookings(phone);
-                
                 if (myBookings.length === 0) {
-                    resultsTitle.textContent = 'No Bookings Found';
-                    bookingsList.innerHTML = `
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="empty-state">
-                                    <div class="empty-icon">📭</div>
-                                    <h3>No Bookings Found</h3>
-                                    <p>No appointments found for ${phone}</p>
-                                    <a href="booking.html" class="btn btn-primary">📅 Book Appointment</a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    rt.textContent = 'No Bookings Found';
+                    bl.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><div class="empty-icon">📭</div><h3>No Bookings Found</h3><p>No appointments found for ${phone}</p><a href="booking.html" class="btn btn-primary">📅 Book Appointment</a></div></div></div>`;
                 } else {
-                    resultsTitle.textContent = `Found ${myBookings.length} booking(s) for ${phone}`;
-                    
-                    bookingsList.innerHTML = myBookings.map(b => `
-                        <div class="card" style="margin-bottom:16px;">
-                            <div class="card-body">
-                                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-                                    <div style="flex:1;">
-                                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                                            <strong style="font-size:1.1rem;">#${b.slot_number}</strong>
-                                            <span style="color:var(--text-light);">|</span>
-                                            <span>${b.clinic_name || 'N/A'}</span>
-                                        </div>
-                                        <p style="margin:4px 0;color:var(--text-light);">👨‍⚕️ <strong>${b.doctor_name || 'N/A'}</strong></p>
-                                        <p style="margin:4px 0;color:var(--text-light);">📅 ${b.appointment_date} | 🕐 ${b.time_slot}</p>
-                                        <p style="margin:4px 0;color:var(--text-light);">🆔 ${b.booking_id}</p>
+                    rt.textContent = `Found ${myBookings.length} booking(s) for ${phone}`;
+                    bl.innerHTML = myBookings.map(b => {
+                        const daysAgo = b.appointment_date ? Math.floor((new Date() - new Date(b.appointment_date)) / (1000*60*60*24)) : 999;
+                        return `<div class="card" style="margin-bottom:16px;"><div class="card-body">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                                <div style="flex:1;">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                                        <strong style="font-size:1.1rem;">🆔 ${b.booking_id}</strong>
+                                        <span style="color:var(--text-light);">|</span>
+                                        <span>${b.clinic_name || 'N/A'}</span>
                                     </div>
-                                    <div style="text-align:right;">
-                                        ${getStatusBadge(b.status)}
-                                        <div style="margin-top:4px;">${getTypeBadge(b.booking_type)}</div>
-                                    </div>
+                                    <p style="margin:4px 0;color:var(--text-light);">👨‍⚕️ ${b.doctor_name || 'N/A'}</p>
+                                    <p style="margin:4px 0;color:var(--text-light);">📅 ${b.appointment_date} | 🕐 ${b.time_slot}</p>
                                 </div>
-                                <div class="divider"></div>
-                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                    ${(b.status === 'waiting' || b.status === 'current') ? 
-                                        `<a href="tracking.html?clinic=${b.clinic_id}&slot=${b.slot_number}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
-                                </div>
+                                <div style="text-align:right;">${getStatusBadge(b.status)}<div style="margin-top:4px;">${getTypeBadge(b.booking_type)}</div></div>
                             </div>
-                        </div>
-                    `).join('');
+                            <div class="divider"></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                ${(b.status === 'waiting' || b.status === 'current') ? `<a href="tracking.html?clinic=${b.clinic_id}&booking=${b.booking_id}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
+                                ${b.is_revisit_available ? `<button class="btn btn-warning btn-sm" onclick="openRevisit(${b.clinic_id},${b.doctor_id},'${b.patient_name}','${b.patient_phone}')">🔄 Book Revisit (Free)</button>` : ''}
+                                ${b.booking_type === 'revisit' ? '<span class="badge badge-success">💰 Free Visit</span>' : ''}
+                            </div>
+                        </div></div>`;
+                    }).join('');
                 }
-                
-                resultsSection.scrollIntoView({ behavior: 'smooth' });
-            } catch (error) {
-                resultsTitle.textContent = 'Error';
-                bookingsList.innerHTML = '<p style="color:var(--danger);">Failed to fetch bookings. Check if backend is running.</p>';
-                console.error('My bookings error:', error);
-            }
+                rs.scrollIntoView({ behavior: 'smooth' });
+            } catch(e) { rt.textContent = 'Error'; bl.innerHTML = '<p style="color:var(--danger);">Failed to fetch bookings.</p>'; }
         });
+
+        function openRevisit(clinicId, doctorId, name, phone) {
+            document.getElementById('revisitClinicId').value = clinicId;
+            document.getElementById('revisitDoctorId').value = doctorId;
+            document.getElementById('revisitPatientName').value = name;
+            document.getElementById('revisitPatientPhone').value = phone;
+            document.getElementById('revisitDate').min = new Date().toISOString().split('T')[0];
+            const ts = document.getElementById('revisitTime');
+            ts.innerHTML = TIME_SLOTS.map(s => `<option value="${s}">${s}</option>`).join('');
+            showModal('revisitModal');
+        }
+
+        async function confirmRevisit() {
+            const data = {
+                clinic_id: parseInt(document.getElementById('revisitClinicId').value),
+                doctor_id: parseInt(document.getElementById('revisitDoctorId').value),
+                patient_name: document.getElementById('revisitPatientName').value,
+                patient_phone: document.getElementById('revisitPatientPhone').value,
+                appointment_date: document.getElementById('revisitDate').value,
+                time_slot: document.getElementById('revisitTime').value
+            };
+            if (!data.appointment_date || !data.time_slot) { showToast('Error', 'Fill all fields', 'error'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/appointments/revisit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const result = await res.json();
+                if (result.id) {
+                    hideModal('revisitModal');
+                    showToast('Booked!', `Revisit booked! Booking ID: ${result.booking_id}`, 'success');
+                    setTimeout(() => document.getElementById('searchForm').dispatchEvent(new Event('submit')), 500);
+                } else { showToast('Error', result.detail || 'Failed', 'error'); }
+            } catch(e) { showToast('Error', 'Connection failed', 'error'); }
+        }
     </script>
 </body>
 </html>

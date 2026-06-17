@@ -310,3 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   setTimeout(initDarkMode, 1);
 }
+
+function getTypeBadge(type) {
+    if (type === 'revisit') return '<span class="badge badge-warning">🔄 Revisit</span>';
+    if (type === 'walkin') return '<span class="badge badge-warning">🚶 Walk-in</span>';
+    return '<span class="badge badge-primary">💻 Online</span>';
+}
