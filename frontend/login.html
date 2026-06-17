@@ -33,7 +33,7 @@
         <div class="container-sm">
             <div class="card">
                 <div class="card-header"><h3>👤 Sign In</h3></div>
-                <div class="card-body">
+                <div class="card-body" id="loginCardBody">
                     <!-- Google Login Button -->
                     <button type="button" class="btn btn-block" onclick="googleLogin()" style="background:white;color:#333;border:1.5px solid #ddd;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;margin-bottom:16px;">
                         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
@@ -102,28 +102,42 @@
 
         // Google Login
         function googleLogin() {
-            const redirectUri = window.location.origin;
+            const redirectUri = window.location.origin + '/login.html';
             const scope = 'email profile';
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=select_account`;
             window.location.href = authUrl;
         }
 
-        window.addEventListener('load', function() {
+        // Process Google callback immediately
+        (function checkGoogleToken() {
             const hash = window.location.hash;
             if (hash && hash.includes('access_token')) {
                 const params = new URLSearchParams(hash.substring(1));
                 const accessToken = params.get('access_token');
                 if (accessToken) {
+                    document.getElementById('loginCardBody').innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div><p style="margin-top:16px;">Logging in with Google...</p></div>';
+                    
                     fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                         headers: { 'Authorization': `Bearer ${accessToken}` }
                     })
                     .then(r => r.json())
-                    .then(user => handleGoogleUser(user))
-                    .catch(() => showToast('Error', 'Google login failed', 'error'));
+                    .then(user => {
+                        if (user.email) {
+                            handleGoogleUser(user);
+                        } else {
+                            showToast('Error', 'Failed to get Google account', 'error');
+                            window.location.hash = '';
+                            location.reload();
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Error', 'Google login failed', 'error');
+                        window.location.hash = '';
+                        location.reload();
+                    });
                 }
-                window.location.hash = '';
             }
-        });
+        })();
 
         async function handleGoogleUser(googleUser) {
             try {
@@ -142,8 +156,14 @@
                         else if (result.user.user_type === 'clinic') window.location.href = 'admin.html';
                         else window.location.href = 'booking.html';
                     }, 1000);
+                } else {
+                    showToast('Error', 'Google login failed', 'error');
+                    location.reload();
                 }
-            } catch(e) { showToast('Error', 'Google login failed', 'error'); }
+            } catch(e) { 
+                showToast('Error', 'Google login failed', 'error'); 
+                location.reload();
+            }
         }
 
         // Email/Phone Login
