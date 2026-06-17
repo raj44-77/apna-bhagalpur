@@ -117,7 +117,6 @@
         function updateUI() {
             const c = dashboardData?.current_patient;
             const toMins = (t) => { if (!t) return 0; try { const [time, p] = t.trim().split(' '); let [h, m] = time.split(':').map(Number); if (p === 'PM' && h !== 12) h += 12; if (p === 'AM' && h === 12) h = 0; return h * 60 + m; } catch { return 0; } };
-            // ALL patients sorted by time continuously
             const apps = (dashboardData?.appointments || []).sort((a, b) => toMins(a.time_slot) - toMins(b.time_slot));
             const s = document.getElementById('currentPatientSection');
             if (c && c.slot_number) { 
@@ -127,8 +126,21 @@
             
             document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map((a, index) => {
                 let actionButtons = '';
-                if (a.status === 'absent') { actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`; }
-                return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}"><div><strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>${actionButtons}</div><div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)} ${getStatusBadge(a.status)}</div></div>`;
+                if (a.status === 'absent') {
+                    actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`;
+                }
+                return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}">
+                    <div style="flex:1;">
+                        <strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}
+                        <div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>
+                        ${actionButtons}
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        ${getTypeBadge(a.booking_type)}
+                        ${getStatusBadge(a.status)}
+                        ${(a.status === 'waiting' || a.status === 'completed') ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}
+                    </div>
+                </div>`;
             }).join('');
             
             document.getElementById('statProgress').textContent = `${(dashboardData?.stats?.completed||0)}/${(dashboardData?.stats?.total||0)}`;
@@ -136,6 +148,16 @@
             document.getElementById('statWalkins').textContent = dashboardData?.queue?.total_walkins || 0;
             const lb = document.getElementById('lockBtn'); if (lb) { lb.textContent = dashboardData?.is_locked ? '🔓 Unlock Queue' : '🔒 Lock Queue'; lb.className = dashboardData?.is_locked ? 'btn btn-success btn-block' : 'btn btn-outline btn-block'; lb.style.marginTop = '12px'; }
             const startBtn = document.getElementById('startBtn'); if (startBtn) { startBtn.style.display = (c && c.slot_number && !consultationStarted && !timerInterval) ? 'block' : 'none'; }
+        }
+
+        async function deleteAppointment(appointmentId) {
+            if (!confirm('Delete this booking? This cannot be undone.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.message) { showToast('Deleted', result.message, 'success'); await loadDashboard(); }
+                else { showToast('Error', 'Failed to delete', 'error'); }
+            } catch(e) { showToast('Error', 'Failed', 'error'); }
         }
 
         function toggleAdvanced() { const d = document.getElementById('advancedFeatures'); const b = event.target; if (d.style.display === 'none' || d.style.display === '') { d.style.display = 'block'; b.textContent = '⚙️ Advanced Features ▴'; } else { d.style.display = 'none'; b.textContent = '⚙️ Advanced Features ▾'; } }

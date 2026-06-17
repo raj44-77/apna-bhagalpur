@@ -153,3 +153,41 @@ async def reschedule_appointment(appointment_id: int, new_date: str, db: Session
     appointment.appointment_date = new_date; appointment.status = "waiting"; appointment.slot_number = max_slot + 1
     db.commit()
     return {"message": f"Rescheduled to {new_date}", "new_slot": appointment.slot_number}
+
+@router.delete("/delete-appointment/{appointment_id}")
+async def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    clinic_id = appointment.clinic_id
+    appointment_date = appointment.appointment_date
+    
+    db.delete(appointment)
+    db.commit()
+    
+    # Recalculate slot numbers
+    remaining = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date == appointment_date
+    ).order_by(Appointment.time_slot, Appointment.id).all()
+    
+    for idx, apt in enumerate(remaining, 1):
+        apt.slot_number = idx
+    
+    # Reset current if needed
+    queue = db.query(QueueState).filter(
+        QueueState.clinic_id == clinic_id,
+        QueueState.appointment_date == appointment_date
+    ).first()
+    
+    if queue:
+        current_exists = any(a.status == "current" for a in remaining)
+        if not current_exists and remaining:
+            remaining[0].status = "current"
+            queue.current_slot_number = remaining[0].slot_number
+        elif not remaining:
+            queue.current_slot_number = 0
+    
+    db.commit()
+    return {"message": "Appointment deleted and queue reordered"}

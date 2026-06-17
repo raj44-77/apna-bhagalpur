@@ -110,5 +110,10 @@ const API = {
     async rescheduleAppointment(appointmentId, newDate) {
         const res = await fetch(`${API_BASE}/admin/reschedule/${appointmentId}?new_date=${newDate}`, { method: 'POST' });
         return res.json();
+    },
+
+    async deleteAppointment(appointmentId) {
+    const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' });
+    return res.json();
     }
-};
+};    
