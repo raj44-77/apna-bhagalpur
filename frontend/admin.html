@@ -144,7 +144,7 @@
             const s = document.getElementById('currentPatientSection');
             if (c && c.slot_number) { 
                 const serialNum = apps.findIndex(a => a.slot_number === c.slot_number) + 1;
-                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p>${!isPastDate() ? '<div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>' : ''}</div>`; 
+                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">📞 ${c.patient_phone||'N/A'} | 🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p>${!isPastDate() ? '<div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>' : ''}</div>`; 
             } else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; stopTimer(); }
             
             document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map((a, index) => {
@@ -154,7 +154,7 @@
                 }
                 const canDelete = (a.status === 'waiting' || a.status === 'completed') && !isPastDate();
                 return `<div class="${a.status==='current'?'current-row':''}" style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border);${a.status==='absent'?'opacity:0.7;':''}">
-                    <div style="flex:1;"><strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>${actionButtons}</div>
+                    <div style="flex:1;"><strong>#${index + 1} | 🕐 ${a.time_slot}</strong> - ${a.patient_name}<div style="font-size:0.8rem;color:var(--text-light);">👨‍⚕️ ${a.doctor_name||'N/A'} | 📞 ${a.patient_phone||'N/A'} | 🆔 ${a.booking_id||'#'+a.slot_number}</div>${actionButtons}</div>
                     <div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}${canDelete ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}</div>
                 </div>`;
             }).join('');
