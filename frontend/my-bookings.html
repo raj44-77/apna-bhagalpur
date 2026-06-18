@@ -34,7 +34,8 @@
     <div class="modal-overlay hidden" id="revisitModal">
         <div class="modal"><div class="modal-header"><h3>🔄 Book Revisit (Free Follow-up)</h3><button class="modal-close" onclick="hideModal('revisitModal')">×</button></div>
         <div class="modal-body"><form id="revisitForm">
-            <input type="hidden" id="revisitClinicId"><input type="hidden" id="revisitDoctorId"><input type="hidden" id="revisitPatientName"><input type="hidden" id="revisitPatientPhone">
+            <input type="hidden" id="revisitClinicId"><input type="hidden" id="revisitDoctorId"><input type="hidden" id="revisitPatientName">
+            <div class="form-group"><label class="form-label">Your Phone Number *</label><input type="tel" class="form-control" id="revisitPhoneInput" placeholder="Enter 10-digit phone" required pattern="[0-9]{10}" maxlength="10"></div>
             <div class="form-group"><label class="form-label">Appointment Date *</label><input type="date" class="form-control" id="revisitDate" required></div>
             <div class="form-group"><label class="form-label">Preferred Time *</label><select class="form-control" id="revisitTime" required></select></div>
             <p style="font-size:0.85rem;color:var(--success);">💰 Free follow-up visit - No payment needed!</p>
@@ -82,7 +83,7 @@
                             <div class="divider"></div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                 ${canTrack ? `<a href="tracking.html?clinic=${b.clinic_id}&booking=${b.booking_id}" class="btn btn-primary btn-sm">📍 Track Live</a>` : ''}
-                                ${b.is_revisit_available ? `<button class="btn btn-warning btn-sm" onclick="openRevisit(${b.clinic_id},${b.doctor_id},'${b.patient_name}','${b.patient_phone}')">🔄 Book Revisit (Free)</button>` : ''}
+                                ${b.is_revisit_available ? `<button class="btn btn-warning btn-sm" onclick="openRevisit(${b.clinic_id},${b.doctor_id},'${b.patient_name}')">🔄 Book Revisit (Free)</button>` : ''}
                                 ${b.booking_type === 'revisit' ? '<span class="badge badge-success">💰 Free Visit</span>' : ''}
                             </div>
                         </div></div>`;
@@ -92,23 +93,27 @@
             } catch(e) { rt.textContent = 'Error'; bl.innerHTML = '<p style="color:var(--danger);">Failed to fetch bookings.</p>'; }
         });
 
-        function openRevisit(clinicId, doctorId, name, phone) {
+        function openRevisit(clinicId, doctorId, name) {
             document.getElementById('revisitClinicId').value = clinicId;
             document.getElementById('revisitDoctorId').value = doctorId;
             document.getElementById('revisitPatientName').value = name;
-            document.getElementById('revisitPatientPhone').value = phone;
+            document.getElementById('revisitPhoneInput').value = '';
             document.getElementById('revisitDate').min = new Date().toISOString().split('T')[0];
+            document.getElementById('revisitDate').value = '';
             const ts = document.getElementById('revisitTime');
             ts.innerHTML = TIME_SLOTS.map(s => `<option value="${s}">${s}</option>`).join('');
             showModal('revisitModal');
         }
 
         async function confirmRevisit() {
+            const phone = document.getElementById('revisitPhoneInput').value.trim();
+            if (phone.length !== 10) { showToast('Error', 'Enter a valid 10-digit phone number', 'error'); return; }
+            
             const data = {
                 clinic_id: parseInt(document.getElementById('revisitClinicId').value),
                 doctor_id: parseInt(document.getElementById('revisitDoctorId').value),
                 patient_name: document.getElementById('revisitPatientName').value,
-                patient_phone: document.getElementById('revisitPatientPhone').value,
+                patient_phone: phone,
                 appointment_date: document.getElementById('revisitDate').value,
                 time_slot: document.getElementById('revisitTime').value
             };
