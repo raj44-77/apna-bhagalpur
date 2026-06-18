@@ -17,7 +17,7 @@ jobs:
           mysqldump --host=${{ secrets.DB_HOST }} --port=${{ secrets.DB_PORT }} --user=${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }} ${{ secrets.DB_NAME }} > backup_$(date +%Y%m%d).sql
       
       - name: Upload backup
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: database-backup
           path: backup_*.sql
