@@ -120,7 +120,9 @@
                     hideModal('revisitModal');
                     showToast('Booked!', `Revisit booked! Booking ID: ${result.booking_id}`, 'success');
                     setTimeout(() => document.getElementById('searchForm').dispatchEvent(new Event('submit')), 500);
-                } else { showToast('Error', result.detail || 'Failed', 'error'); }
+                } else { 
+                    showToast('Error', result.detail || 'Failed', 'error'); 
+                }
             } catch(e) { showToast('Error', 'Connection failed', 'error'); }
         }
     </script>
