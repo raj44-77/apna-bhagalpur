@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -14,14 +14,13 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    docs_url=None,  # Disable default docs
+    docs_url=None,
     redoc_url=None
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -37,21 +36,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Custom Swagger - only accessible with admin token
+ADMIN_API_KEY = "apna-bhagalpur-admin-2024"
+
 @app.get("/api/docs", include_in_schema=False)
-async def custom_swagger_ui_html(request: Request):
+async def custom_swagger_ui_html(request: Request, key: str = None):
+    if key != ADMIN_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized. Add ?key= to access.")
     return get_swagger_ui_html(
-        openapi_url="/api/openapi.json",
+        openapi_url=f"/api/openapi.json?key={key}",
         title=settings.app_name + " - API Docs",
-        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
-        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
     )
 
 @app.get("/api/openapi.json", include_in_schema=False)
-async def get_open_api_endpoint():
+async def get_open_api_endpoint(key: str = None):
+    if key != ADMIN_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
     return get_openapi(title=settings.app_name, version=settings.app_version, routes=app.routes)
 
-# Routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(clinics.router, prefix="/api/clinics", tags=["Clinics"])
 app.include_router(appointments.router, prefix="/api/appointments", tags=["Appointments"])
