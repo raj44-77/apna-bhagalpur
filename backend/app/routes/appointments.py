@@ -37,6 +37,13 @@ def to_minutes(time_str):
     except: return 9999
 
 
+def mask_phone(phone):
+    """Mask middle digits of phone number for privacy"""
+    if not phone or len(phone) < 10:
+        return phone
+    return phone[:4] + "****" + phone[-2:]
+
+
 @router.post("/book")
 @limiter.limit("10/minute")
 async def book_appointment(request: Request, data: BookingData, db: Session = Depends(get_db)):
@@ -78,8 +85,9 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         return {
             "id": appointment.id, "booking_id": appointment.booking_id, "clinic_id": appointment.clinic_id,
             "doctor_id": appointment.doctor_id, "patient_name": appointment.patient_name,
-            "patient_phone": appointment.patient_phone, "patient_age": appointment.patient_age,
-            "patient_gender": appointment.patient_gender, "appointment_date": str(appointment.appointment_date),
+            "patient_phone": mask_phone(appointment.patient_phone),
+            "patient_age": appointment.patient_age, "patient_gender": appointment.patient_gender,
+            "appointment_date": str(appointment.appointment_date),
             "time_slot": appointment.time_slot, "slot_number": appointment.slot_number,
             "booking_type": appointment.booking_type, "status": appointment.status,
             "clinic_name": clinic.name, "doctor_name": doctor.name, "created_at": str(datetime.now())
@@ -109,7 +117,7 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         ).order_by(Appointment.appointment_date.desc()).first()
         
         if not original_visit:
-            raise HTTPException(status_code=400, detail="No eligible visit found. Revisit is valid only within 15 days of your last visit.")
+            raise HTTPException(status_code=400, detail="No eligible visit found.")
         
         already_revisited = db.query(Appointment).filter(
             Appointment.clinic_id == clinic_id,
@@ -119,7 +127,7 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         ).first()
         
         if already_revisited:
-            raise HTTPException(status_code=400, detail="You have already used your revisit. Only one revisit is allowed per visit.")
+            raise HTTPException(status_code=400, detail="Revisit already used.")
         
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment_date).count()
         slot_num = count + 1
@@ -171,7 +179,14 @@ async def track_queue(clinic_id: int, slot_number: int, appointment_date: str = 
     elif ahead == 0 and appointment.status == "current": status_msg, alert = "Your turn now!", "warning"
     elif ahead <= 3: status_msg, alert = "Almost there!", "warning"
     else: status_msg, alert = "In queue", "info"
-    return {"your_slot": appointment.slot_number, "current_slot": current_slot, "queue_ahead": ahead, "estimated_wait_minutes": wait_minutes, "estimated_wait_string": wait_str, "status": appointment.status, "status_message": status_msg, "alert_type": alert, "booking_id": appointment.booking_id, "patient_name": appointment.patient_name, "time_slot": appointment.time_slot, "appointment_date": str(appointment.appointment_date)}
+    return {
+        "your_slot": appointment.slot_number, "current_slot": current_slot,
+        "queue_ahead": ahead, "estimated_wait_minutes": wait_minutes,
+        "estimated_wait_string": wait_str, "status": appointment.status,
+        "status_message": status_msg, "alert_type": alert,
+        "booking_id": appointment.booking_id, "patient_name": appointment.patient_name,
+        "time_slot": appointment.time_slot, "appointment_date": str(appointment.appointment_date)
+    }
 
 
 @router.get("/track-by-booking/{clinic_id}")
@@ -226,7 +241,8 @@ async def my_bookings(request: Request, phone: str, db: Session = Depends(get_db
         result.append({
             "id": a.id, "booking_id": a.booking_id, "clinic_id": a.clinic_id,
             "doctor_id": a.doctor_id, "patient_name": a.patient_name,
-            "patient_phone": a.patient_phone, "appointment_date": str(a.appointment_date),
+            "patient_phone": mask_phone(a.patient_phone),
+            "appointment_date": str(a.appointment_date),
             "time_slot": a.time_slot, "slot_number": a.slot_number,
             "booking_type": a.booking_type, "status": a.status,
             "is_revisit_available": is_revisit_available,
