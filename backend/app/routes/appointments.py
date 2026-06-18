@@ -123,15 +123,15 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment_date).count()
         slot_num = count + 1
-        booking_id = f"R{clinic_id}{slot_num:03d}"
         
         appointment = Appointment(
-            booking_id=booking_id, clinic_id=clinic_id, doctor_id=doctor_id,
+            booking_id="TEMP", clinic_id=clinic_id, doctor_id=doctor_id,
             patient_name=patient_name, patient_phone=patient_phone,
             appointment_date=appointment_date, time_slot=time_slot,
             slot_number=slot_num, booking_type="revisit", status="waiting"
         )
         db.add(appointment); db.flush()
+        appointment.booking_id = f"R{appointment.id:05d}"
         
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == appointment_date).first()
         if not queue: queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=appointment_date, current_slot_number=0); db.add(queue); db.flush()
