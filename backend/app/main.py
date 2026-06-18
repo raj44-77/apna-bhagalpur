@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -7,19 +9,19 @@ from .config import get_settings
 from .routes import auth, clinics, appointments, admin, queue, websocket, analytics, super_admin
 
 settings = get_settings()
-
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    docs_url=None,  # Disable default docs
+    redoc_url=None
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -35,6 +37,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Custom Swagger - only accessible with admin token
+@app.get("/api/docs", include_in_schema=False)
+async def custom_swagger_ui_html(request: Request):
+    return get_swagger_ui_html(
+        openapi_url="/api/openapi.json",
+        title=settings.app_name + " - API Docs",
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+@app.get("/api/openapi.json", include_in_schema=False)
+async def get_open_api_endpoint():
+    return get_openapi(title=settings.app_name, version=settings.app_version, routes=app.routes)
+
+# Routers
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(clinics.router, prefix="/api/clinics", tags=["Clinics"])
 app.include_router(appointments.router, prefix="/api/appointments", tags=["Appointments"])
