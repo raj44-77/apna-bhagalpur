@@ -38,7 +38,6 @@ def to_minutes(time_str):
 
 
 def mask_phone(phone):
-    """Mask middle digits of phone number for privacy"""
     if not phone or len(phone) < 10:
         return phone
     return phone[:4] + "****" + phone[-2:]
@@ -58,16 +57,16 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         
         count = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).count()
         slot_num = count + 1
-        booking_id = f"B{slot_num:03d}"
         
         appointment = Appointment(
-            booking_id=booking_id, clinic_id=data.clinic_id, doctor_id=data.doctor_id,
+            booking_id="TEMP", clinic_id=data.clinic_id, doctor_id=data.doctor_id,
             patient_name=data.patient_name, patient_phone=data.patient_phone,
             patient_age=data.patient_age, patient_gender=data.patient_gender,
             appointment_date=data.appointment_date, time_slot=data.time_slot,
             slot_number=slot_num, booking_type="online", status="waiting"
         )
         db.add(appointment); db.flush()
+        appointment.booking_id = f"B{appointment.id:05d}"
         
         queue = db.query(QueueState).filter(QueueState.clinic_id == data.clinic_id, QueueState.appointment_date == data.appointment_date).first()
         if not queue: queue = QueueState(clinic_id=data.clinic_id, doctor_id=data.doctor_id, appointment_date=data.appointment_date, current_slot_number=0); db.add(queue); db.flush()
@@ -179,14 +178,7 @@ async def track_queue(clinic_id: int, slot_number: int, appointment_date: str = 
     elif ahead == 0 and appointment.status == "current": status_msg, alert = "Your turn now!", "warning"
     elif ahead <= 3: status_msg, alert = "Almost there!", "warning"
     else: status_msg, alert = "In queue", "info"
-    return {
-        "your_slot": appointment.slot_number, "current_slot": current_slot,
-        "queue_ahead": ahead, "estimated_wait_minutes": wait_minutes,
-        "estimated_wait_string": wait_str, "status": appointment.status,
-        "status_message": status_msg, "alert_type": alert,
-        "booking_id": appointment.booking_id, "patient_name": appointment.patient_name,
-        "time_slot": appointment.time_slot, "appointment_date": str(appointment.appointment_date)
-    }
+    return {"your_slot": appointment.slot_number, "current_slot": current_slot, "queue_ahead": ahead, "estimated_wait_minutes": wait_minutes, "estimated_wait_string": wait_str, "status": appointment.status, "status_message": status_msg, "alert_type": alert, "booking_id": appointment.booking_id, "patient_name": appointment.patient_name, "time_slot": appointment.time_slot, "appointment_date": str(appointment.appointment_date)}
 
 
 @router.get("/track-by-booking/{clinic_id}")

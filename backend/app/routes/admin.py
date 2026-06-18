@@ -67,11 +67,18 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         today = appointment_date if appointment_date else str(date.today())
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).count()
         slot_num = count + 1
-        booking_id = f"W{slot_num:03d}"
         ist = timezone(timedelta(hours=5, minutes=30))
         ist_time = datetime.now(ist).strftime("%I:%M %p")
-        appointment = Appointment(booking_id=booking_id, clinic_id=clinic_id, doctor_id=doctor_id, patient_name=patient_name, patient_phone=patient_phone or "", appointment_date=today, time_slot=ist_time, slot_number=slot_num, booking_type="walkin", status="waiting")
-        db.add(appointment)
+        
+        appointment = Appointment(
+            booking_id="TEMP", clinic_id=clinic_id, doctor_id=doctor_id,
+            patient_name=patient_name, patient_phone=patient_phone or "",
+            appointment_date=today, time_slot=ist_time,
+            slot_number=slot_num, booking_type="walkin", status="waiting"
+        )
+        db.add(appointment); db.flush()
+        appointment.booking_id = f"W{appointment.id:05d}"
+        
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if not queue: queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=today, current_slot_number=0); db.add(queue); db.flush()
         queue.total_walkins += 1
@@ -94,7 +101,7 @@ async def get_dashboard(request: Request, clinic_id: int, appointment_date: str 
     return {
         "appointment_date": today, "is_locked": queue.is_locked if queue else False,
         "queue": {"current_slot": queue.current_slot_number if queue else 0, "total_served": queue.total_patients_served if queue else 0, "total_absent": queue.total_absent if queue else 0, "total_walkins": queue.total_walkins if queue else 0},
-        "current_patient": {"slot_number": current.slot_number if current else None, "name": current.patient_name if current else None, "booking_type": current.booking_type if current else None, "time_slot": current.time_slot if current else None, "booking_id": current.booking_id if current else None} if current else None,
+        "current_patient": {"slot_number": current.slot_number if current else None, "name": current.patient_name if current else None, "booking_type": current.booking_type if current else None, "time_slot": current.time_slot if current else None, "booking_id": current.booking_id if current else None, "patient_phone": current.patient_phone if current else None} if current else None,
         "appointments": [{"id": a.id, "booking_id": a.booking_id, "slot_number": a.slot_number, "patient_name": a.patient_name, "patient_phone": a.patient_phone, "booking_type": a.booking_type, "time_slot": a.time_slot, "status": a.status, "doctor_name": a.doctor.name if a.doctor else None} for a in appointments],
         "stats": {"total": len(appointments), "completed": len([a for a in appointments if a.status == "completed"]), "waiting": len([a for a in appointments if a.status == "waiting"]), "absent": len([a for a in appointments if a.status == "absent"])}
     }
@@ -154,40 +161,20 @@ async def reschedule_appointment(appointment_id: int, new_date: str, db: Session
     db.commit()
     return {"message": f"Rescheduled to {new_date}", "new_slot": appointment.slot_number}
 
+
 @router.delete("/delete-appointment/{appointment_id}")
 async def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if not appointment:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    
+    if not appointment: raise HTTPException(status_code=404, detail="Appointment not found")
     clinic_id = appointment.clinic_id
     appointment_date = appointment.appointment_date
-    
-    db.delete(appointment)
-    db.commit()
-    
-    # Recalculate slot numbers
-    remaining = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date == appointment_date
-    ).order_by(Appointment.time_slot, Appointment.id).all()
-    
-    for idx, apt in enumerate(remaining, 1):
-        apt.slot_number = idx
-    
-    # Reset current if needed
-    queue = db.query(QueueState).filter(
-        QueueState.clinic_id == clinic_id,
-        QueueState.appointment_date == appointment_date
-    ).first()
-    
+    db.delete(appointment); db.commit()
+    remaining = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment_date).order_by(Appointment.time_slot, Appointment.id).all()
+    for idx, apt in enumerate(remaining, 1): apt.slot_number = idx
+    queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == appointment_date).first()
     if queue:
         current_exists = any(a.status == "current" for a in remaining)
-        if not current_exists and remaining:
-            remaining[0].status = "current"
-            queue.current_slot_number = remaining[0].slot_number
-        elif not remaining:
-            queue.current_slot_number = 0
-    
+        if not current_exists and remaining: remaining[0].status = "current"; queue.current_slot_number = remaining[0].slot_number
+        elif not remaining: queue.current_slot_number = 0
     db.commit()
     return {"message": "Appointment deleted and queue reordered"}
