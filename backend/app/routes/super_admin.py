@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, timedelta
@@ -7,12 +7,20 @@ from ..models.appointment import Appointment
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from ..models.user import User
+import os
 
 router = APIRouter()
 
+SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "apna-bhagalpur-super-admin-2024")
+
+def verify_super_admin(x_api_key: str = Header(None)):
+    if x_api_key != SUPER_ADMIN_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return True
+
 
 @router.get("/overview")
-async def get_overview(db: Session = Depends(get_db)):
+async def get_overview(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -50,7 +58,7 @@ async def get_overview(db: Session = Depends(get_db)):
 
 
 @router.get("/clinic-performance")
-async def get_clinic_performance(db: Session = Depends(get_db)):
+async def get_clinic_performance(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -102,7 +110,7 @@ async def get_clinic_performance(db: Session = Depends(get_db)):
 
 
 @router.get("/daily-stats")
-async def get_daily_stats(db: Session = Depends(get_db)):
+async def get_daily_stats(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -136,7 +144,7 @@ async def get_daily_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/recent")
-async def get_recent(db: Session = Depends(get_db)):
+async def get_recent(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     appointments = db.query(Appointment).order_by(
         Appointment.appointment_date.desc(),
         Appointment.slot_number.desc()

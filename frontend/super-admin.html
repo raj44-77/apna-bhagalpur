@@ -130,7 +130,8 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // Check super admin access
+        const SUPER_ADMIN_KEY = 'apna-bhagalpur-super-admin-2024';
+
         function checkSuperAdmin() {
             const user = AuthStore.getCurrentUser();
             if (!user || user.user_type !== 'admin') {
@@ -153,7 +154,9 @@
 
         async function loadOverview() {
             try {
-                const res = await fetch(`${API_BASE}/super-admin/overview`);
+                const res = await fetch(`${API_BASE}/super-admin/overview`, {
+                    headers: { 'x-api-key': SUPER_ADMIN_KEY }
+                });
                 const data = await res.json();
                 document.getElementById('statClinics').textContent = data.total_clinics;
                 document.getElementById('statDoctors').textContent = data.total_doctors;
@@ -164,7 +167,9 @@
 
         async function loadDaily() {
             try {
-                const res = await fetch(`${API_BASE}/super-admin/daily-stats`);
+                const res = await fetch(`${API_BASE}/super-admin/daily-stats`, {
+                    headers: { 'x-api-key': SUPER_ADMIN_KEY }
+                });
                 const data = await res.json();
                 const maxVal = Math.max(...data.map(d => d.total), 1);
                 
@@ -180,7 +185,9 @@
 
         async function loadClinics() {
             try {
-                const res = await fetch(`${API_BASE}/super-admin/clinic-performance`);
+                const res = await fetch(`${API_BASE}/super-admin/clinic-performance`, {
+                    headers: { 'x-api-key': SUPER_ADMIN_KEY }
+                });
                 const data = await res.json();
                 
                 document.getElementById('clinicTable').innerHTML = data.length === 0 ?
@@ -212,7 +219,9 @@
 
         async function loadRecent() {
             try {
-                const res = await fetch(`${API_BASE}/super-admin/recent`);
+                const res = await fetch(`${API_BASE}/super-admin/recent`, {
+                    headers: { 'x-api-key': SUPER_ADMIN_KEY }
+                });
                 const data = await res.json();
                 
                 document.getElementById('recentTable').innerHTML = data.length === 0 ?
