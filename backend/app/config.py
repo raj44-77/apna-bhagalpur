@@ -7,13 +7,13 @@ class Settings(BaseSettings):
     db_host: str = "localhost"
     db_port: int = 3306
     db_user: str = "root"
-    db_password: str = "Raj@7744"
+    db_password: str = ""
     db_name: str = "apna_bhagalpur"
     
     app_name: str = "Apna Bhagalpur"
     app_version: str = "1.0.0"
     debug: bool = True
-    secret_key: str = "apna-bhagalpur-secret-key-2024"
+    secret_key: str = ""
     
     host: str = "0.0.0.0"
     port: int = 8000
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     frontend_url: str = "http://localhost:5500"
     
-    jwt_secret: str = "bhagalpur-jwt-secret-key-2024"
+    jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     jwt_expiration: int = 1440
     
