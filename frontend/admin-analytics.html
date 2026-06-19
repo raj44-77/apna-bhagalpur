@@ -56,7 +56,6 @@
             padding: 6px 12px;
         }
         
-        /* Dark Mode Fixes */
         [data-theme="dark"] .analytics-card {
             background: #1E293B;
             border-color: #334155;
@@ -127,6 +126,7 @@
                                 <option value="30">Last 30 Days</option>
                             </select>
                         </div>
+                        <button class="btn btn-outline" onclick="downloadAnalyticsPDF()" style="height:44px;">📥 Download PDF</button>
                     </div>
                 </div>
             </div>
@@ -313,6 +313,77 @@
                         </div>
                     `).join('');
             } catch(e) {}
+        }
+
+        async function downloadAnalyticsPDF() {
+            if (!analyticsClinicId) return;
+            const days = getDays();
+            const periodText = days === 7 ? 'Last 7 Days' : days === 14 ? 'Last 14 Days' : 'Last 30 Days';
+            const clinicName = document.getElementById('analyticsClinicName').value || 'Clinic';
+            
+            showToast('Generating...', 'Preparing your report', 'info');
+            
+            try {
+                const [overview, daily, doctors, hourly] = await Promise.all([
+                    fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`).then(r => r.json())
+                ]);
+                
+                let html = `<html><head><meta charset="UTF-8"><title>${clinicName} - Analytics Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 30px; color: #333; }
+                    h1 { color: #1E40AF; border-bottom: 3px solid #1E40AF; padding-bottom: 10px; }
+                    h2 { color: #1E40AF; margin-top: 24px; }
+                    .summary-box { background: #F0F9FF; padding: 16px; border-radius: 8px; margin: 16px 0; display: flex; gap: 24px; flex-wrap: wrap; }
+                    .summary-item { text-align: center; }
+                    .summary-value { font-size: 1.5rem; font-weight: bold; color: #1E40AF; }
+                    .summary-label { font-size: 0.8rem; color: #666; }
+                    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+                    th { background: #1E40AF; color: white; padding: 10px; text-align: left; }
+                    td { padding: 10px; border-bottom: 1px solid #e2e8f0; }
+                    .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 0.8rem; color: #999; text-align: center; }
+                    .good { color: #10B981; font-weight: bold; }
+                    .warn { color: #F59E0B; font-weight: bold; }
+                    .bad { color: #EF4444; font-weight: bold; }
+                </style></head><body>
+                <h1>📊 ${clinicName}</h1>
+                <p>Analytics Report - ${periodText} | Generated: ${new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})}</p>
+                
+                <h2>📋 Overview</h2>
+                <div class="summary-box">
+                    <div class="summary-item"><div class="summary-value">${overview.total_patients}</div><div class="summary-label">Total Patients</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.completion_rate}%</div><div class="summary-label">Completion Rate</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.absent_rate}%</div><div class="summary-label">Absent Rate</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.avg_consultation_minutes} min</div><div class="summary-label">Avg Consultation</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.today_count}</div><div class="summary-label">Today</div></div>
+                </div>
+                
+                <h2>👨‍⚕️ Doctor Performance</h2>
+                <table><tr><th>Doctor</th><th>Specialty</th><th>Patients</th><th>Completed</th><th>Avg Time</th><th>Rate</th></tr>`;
+                
+                doctors.forEach(d => {
+                    html += `<tr><td>${d.name}</td><td>${d.specialty}</td><td>${d.total_patients}</td><td>${d.completed}</td><td>${d.avg_consultation_minutes} min</td><td class="${d.completion_rate>=80?'good':d.completion_rate>=50?'warn':'bad'}">${d.completion_rate}%</td></tr>`;
+                });
+                
+                html += `</table><h2>📈 Daily Breakdown</h2>
+                <table><tr><th>Date</th><th>Day</th><th>Total</th><th>Completed</th></tr>`;
+                daily.forEach(d => { html += `<tr><td>${d.date}</td><td>${d.day_name}</td><td>${d.total}</td><td>${d.completed}</td></tr>`; });
+                
+                html += `</table><h2>⏰ Peak Hours</h2>
+                <table><tr><th>Hour</th><th>Patients</th><th>%</th></tr>`;
+                hourly.forEach(h => { html += `<tr><td>${h.hour}</td><td>${h.count}</td><td>${h.percentage}%</td></tr>`; });
+                
+                html += `</table><div class="footer"><p>Generated by Apna Bhagalpur - Bhagalpur ka apna doctor appointment system</p><p>© ${new Date().getFullYear()} Apna Bhagalpur</p></div></body></html>`;
+                
+                const w = window.open('', '_blank', 'width=800,height=600');
+                w.document.write(html);
+                w.document.close();
+                setTimeout(() => { w.print(); }, 500);
+                showToast('Ready!', 'Save or print your report', 'success');
+                
+            } catch(e) { showToast('Error', 'Failed to generate report', 'error'); }
         }
 
         document.addEventListener('DOMContentLoaded', initClinic);
