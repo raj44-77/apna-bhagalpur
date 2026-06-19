@@ -78,12 +78,11 @@
                 document.getElementById('yourTime').textContent = d.time_slot||'-';
                 document.getElementById('queueAhead').textContent = d.queue_ahead;
 
-                // Use dashboard API to get total count (more reliable)
-                const localDate = new Date().toLocaleDateString('en-CA');
-                const dashboard = await API.getDashboard(currentTracking.clinicId, localDate);
+                // Use the booking's actual date, not today's date
+                const dashboard = await API.getDashboard(currentTracking.clinicId, d.appointment_date);
                 const totalSlots = (dashboard.appointments || []).length || 1;
                 
-                const progress = totalSlots > 0 ? Math.round((d.queue_ahead / totalSlots) * 100) : 0;
+                const progress = totalSlots > 0 ? Math.round(((totalSlots - d.queue_ahead) / totalSlots) * 100) : 0;
                 const pf = document.getElementById('progressFill');
                 pf.style.width = Math.min(100, progress) + '%';
                 pf.textContent = Math.min(100, progress) + '%';
