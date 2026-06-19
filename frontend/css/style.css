@@ -470,4 +470,37 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
         word-break: break-word;
         text-align: center;
     }
-}
+
+    /* ===== TABLET & MEDIUM SCREEN FIXES ===== */
+@media (min-width: 601px) and (max-width: 1100px) {
+    .auth-area {
+        gap: 4px;
+        flex-wrap: nowrap;
+    }
+    .auth-area span {
+        font-size: 0.7rem;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .auth-area .btn {
+        padding: 6px 10px;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+    
+    /* Navbar adjustments for tablet */
+    .nav-links a {
+        padding: 6px 8px;
+        font-size: 0.72rem;
+        gap: 3px;
+    }
+    
+    .nav-brand .brand-name {
+        font-size: 1rem;
+    }
+    .nav-brand .brand-sub {
+        font-size: 0.55rem;
+    }
+}}
