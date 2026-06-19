@@ -471,43 +471,34 @@ select.form-control { cursor: pointer; appearance: none; background-image: url("
         text-align: center;
     }
 
-    /* ===== TABLET AUTH BUTTONS FIX ===== */
+    /* ===== TABLET & MEDIUM SCREEN FIXES ===== */
 @media (min-width: 601px) and (max-width: 1100px) {
     .auth-area {
-        gap: 6px;
-        flex-wrap: nowrap;
-        flex-shrink: 0;
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+        flex-shrink: 0 !important;
     }
     
     .auth-area span {
-        font-size: 0.7rem;
-        max-width: 50px;
+        font-size: 0.7rem !important;
+        max-width: 40px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .auth-area .btn {
-        padding: 7px 12px !important;
-        font-size: 0.73rem !important;
+        padding: 7px 10px !important;
+        font-size: 0.7rem !important;
         white-space: nowrap !important;
-        flex-shrink: 0;
+        flex: 0 0 auto !important;
         width: auto !important;
-        min-width: fit-content !important;
-    }
-    
-    /* Tighter nav links for tablet */
-    .nav-links {
-        gap: 2px;
     }
     
     .nav-links a {
-        padding: 6px 9px;
-        font-size: 0.73rem;
-    }
-    
-    .nav-brand .brand-sub {
-        display: block;
-        font-size: 0.5rem;
+        padding: 6px 8px;
+        font-size: 0.72rem;
+        gap: 3px;
     }
 }}
