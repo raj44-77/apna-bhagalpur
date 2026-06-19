@@ -92,9 +92,17 @@
                 </div>
 
                 <div class="card" style="margin-bottom:24px;">
-                    <div class="card-header"><h3>📋 Queue (Time Order)</h3></div>
-                    <div class="card-body" id="adminQueueList" style="max-height:500px;overflow-y:auto;">
-                        <div class="empty-state"><p>No appointments for this date</p></div>
+                    <div class="card-header">
+                        <h3>📋 Queue (Time Order)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <input type="text" class="form-control" id="patientSearch" placeholder="🔍 Search patient by name..." oninput="filterQueue()" style="max-width:300px;">
+                        </div>
+                        <div id="adminQueueList" style="max-height:500px;overflow-y:auto;">
+                            <div class="empty-state"><p>No appointments for this date</p></div>
+                        </div>
+                        <div id="searchResults" style="display:none;margin-top:8px;font-size:0.85rem;color:var(--text-light);"></div>
                     </div>
                 </div>
 
@@ -137,17 +145,26 @@
         document.getElementById('adminDate').addEventListener('change', function() { if (currentClinicId) { seconds = 0; consultationStarted = false; stopTimer(); updateActionButtons(); loadDashboard(); } });
         async function loadDashboard() { if (!currentClinicId) return; try { dashboardData = await API.getDashboard(currentClinicId, getSelectedDate()); updateUI(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
 
-        function updateUI() {
-            const c = dashboardData?.current_patient;
+        function filterQueue() {
+            const searchTerm = document.getElementById('patientSearch').value.trim().toLowerCase();
+            const allApps = (dashboardData?.appointments || []);
             const toMins = (t) => { if (!t) return 0; try { const [time, p] = t.trim().split(' '); let [h, m] = time.split(':').map(Number); if (p === 'PM' && h !== 12) h += 12; if (p === 'AM' && h === 12) h = 0; return h * 60 + m; } catch { return 0; } };
-            const apps = (dashboardData?.appointments || []).sort((a, b) => toMins(a.time_slot) - toMins(b.time_slot));
-            const s = document.getElementById('currentPatientSection');
-            if (c && c.slot_number) { 
-                const serialNum = apps.findIndex(a => a.slot_number === c.slot_number) + 1;
-                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">📞 ${c.patient_phone||'N/A'} | 🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p>${!isPastDate() ? '<div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>' : ''}</div>`; 
-            } else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; stopTimer(); }
             
-            document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No appointments</p></div>' : apps.map((a, index) => {
+            let apps = allApps.sort((a, b) => toMins(a.time_slot) - toMins(b.time_slot));
+            
+            if (searchTerm) {
+                apps = apps.filter(a => (a.patient_name || '').toLowerCase().includes(searchTerm));
+                document.getElementById('searchResults').style.display = 'block';
+                document.getElementById('searchResults').textContent = `Found ${apps.length} patient(s) matching "${document.getElementById('patientSearch').value}"`;
+            } else {
+                document.getElementById('searchResults').style.display = 'none';
+            }
+            
+            renderQueueList(apps);
+        }
+
+        function renderQueueList(apps) {
+            document.getElementById('adminQueueList').innerHTML = apps.length === 0 ? '<div class="empty-state"><p>No patients found</p></div>' : apps.map((a, index) => {
                 let actionButtons = '';
                 if (a.status === 'absent' && !isPastDate()) {
                     actionButtons = `<div style="display:flex;gap:4px;margin-top:4px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();startTreatmentAbsent(${a.id})" style="font-size:0.7rem;padding:4px 8px;">▶️ Treat Now</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showReschedule(${a.id})" style="font-size:0.7rem;padding:4px 8px;">📅 Reschedule</button></div>`;
@@ -158,6 +175,21 @@
                     <div style="display:flex;gap:8px;align-items:center;">${getTypeBadge(a.booking_type)}${getStatusBadge(a.status)}${canDelete ? `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();deleteAppointment(${a.id})" style="font-size:0.6rem;padding:2px 6px;color:var(--danger);border-color:var(--danger);margin-left:4px;" title="Delete">🗑️</button>` : ''}</div>
                 </div>`;
             }).join('');
+        }
+
+        function updateUI() {
+            const c = dashboardData?.current_patient;
+            const toMins = (t) => { if (!t) return 0; try { const [time, p] = t.trim().split(' '); let [h, m] = time.split(':').map(Number); if (p === 'PM' && h !== 12) h += 12; if (p === 'AM' && h === 12) h = 0; return h * 60 + m; } catch { return 0; } };
+            const apps = (dashboardData?.appointments || []).sort((a, b) => toMins(a.time_slot) - toMins(b.time_slot));
+            const s = document.getElementById('currentPatientSection');
+            if (c && c.slot_number) { 
+                const serialNum = apps.findIndex(a => a.slot_number === c.slot_number) + 1;
+                s.innerHTML = `<div style="text-align:center;"><div style="font-size:3.5rem;font-weight:700;color:var(--primary);">#${serialNum}</div><h3>${c.name}</h3><p style="font-size:1.2rem;">🕐 ${c.time_slot||''}</p><p style="font-size:0.9rem;color:var(--text-light);">📞 ${c.patient_phone||'N/A'} | 🆔 ${c.booking_id||'#'+c.slot_number} | ${c.booking_type==='walkin'?'🚶 Walk-in':'💻 Online'}</p>${!isPastDate() ? '<div id="timer" style="font-size:1.5rem;font-weight:600;color:var(--primary);">00:00:00</div>' : ''}</div>`; 
+            } else { s.innerHTML = '<div class="empty-state"><div class="empty-icon">🏥</div><h3>No patient being served</h3></div>'; stopTimer(); }
+            
+            renderQueueList(apps);
+            document.getElementById('patientSearch').value = '';
+            document.getElementById('searchResults').style.display = 'none';
             
             document.getElementById('statProgress').textContent = `${(dashboardData?.stats?.completed||0)}/${(dashboardData?.stats?.total||0)}`;
             document.getElementById('statAbsent').textContent = dashboardData?.stats?.absent || 0;
