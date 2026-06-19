@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pydantic import BaseModel
 from typing import Optional
 from slowapi import Limiter
@@ -13,6 +13,9 @@ from ..models.queue import QueueState
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# IST timezone
+ist = timezone(timedelta(hours=5, minutes=30))
 
 
 class BookingData(BaseModel):
@@ -43,6 +46,24 @@ def mask_phone(phone):
     return phone[:4] + "****" + phone[-2:]
 
 
+def is_past_slot(appointment_date: str, time_slot: str) -> bool:
+    """Check if the given date+time has already passed in IST"""
+    try:
+        slot_minutes = to_minutes(time_slot)
+        now = datetime.now(ist)
+        today_str = str(now.date())
+        
+        if appointment_date < today_str:
+            return True  # Past date
+        if appointment_date == today_str:
+            current_minutes = now.hour * 60 + now.minute
+            if slot_minutes <= current_minutes:
+                return True  # Past time today
+        return False
+    except:
+        return False
+
+
 @router.post("/book")
 @limiter.limit("10/minute")
 async def book_appointment(request: Request, data: BookingData, db: Session = Depends(get_db)):
@@ -52,8 +73,13 @@ async def book_appointment(request: Request, data: BookingData, db: Session = De
         doctor = db.query(Doctor).filter(Doctor.id == data.doctor_id).first()
         if not doctor: raise HTTPException(status_code=404, detail="Doctor not found")
         
+        # Check if queue is locked
         queue_check = db.query(QueueState).filter(QueueState.clinic_id == data.clinic_id, QueueState.appointment_date == data.appointment_date).first()
         if queue_check and queue_check.is_locked: raise HTTPException(status_code=400, detail="Bookings are closed for this date")
+        
+        # Prevent booking past time slots
+        if is_past_slot(data.appointment_date, data.time_slot):
+            raise HTTPException(status_code=400, detail="This time slot has already passed. Please select a future time.")
         
         count = db.query(Appointment).filter(Appointment.clinic_id == data.clinic_id, Appointment.appointment_date == data.appointment_date).count()
         slot_num = count + 1
@@ -105,6 +131,10 @@ async def book_revisit(request: Request, data: dict, db: Session = Depends(get_d
         patient_phone = data.get("patient_phone")
         appointment_date = data.get("appointment_date")
         time_slot = data.get("time_slot")
+        
+        # Prevent booking past time slots
+        if is_past_slot(appointment_date, time_slot):
+            raise HTTPException(status_code=400, detail="This time slot has already passed. Please select a future time.")
         
         fifteen_days_ago = date.today() - timedelta(days=15)
         original_visit = db.query(Appointment).filter(
@@ -207,9 +237,10 @@ async def track_by_booking(clinic_id: int, booking_id: str, db: Session = Depend
         "patient_name": appointment.patient_name,
         "clinic_name": appointment.clinic.name if appointment.clinic else None,
         "current_slot": current_slot, "estimated_wait_minutes": wait_minutes,
-        "estimated_wait_string": wait_str
+        "estimated_wait_string": wait_str,
+        "appointment_date": str(appointment.appointment_date)
     }
-
+}
 
 @router.get("/my-bookings")
 @limiter.limit("30/minute")
