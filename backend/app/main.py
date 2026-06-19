@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
@@ -36,7 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ADMIN_API_KEY = "apna-bhagalpur-admin-2024"
+ADMIN_API_KEY = os.getenv("SWAGGER_KEY", "apna-bhagalpur-admin-2024")
 
 @app.get("/api/docs", include_in_schema=False)
 async def custom_swagger_ui_html(request: Request, key: str = None):
