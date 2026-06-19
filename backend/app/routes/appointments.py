@@ -240,7 +240,7 @@ async def track_by_booking(clinic_id: int, booking_id: str, db: Session = Depend
         "estimated_wait_string": wait_str,
         "appointment_date": str(appointment.appointment_date)
     }
-}
+
 
 @router.get("/my-bookings")
 @limiter.limit("30/minute")
