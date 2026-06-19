@@ -123,6 +123,7 @@
 
         document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const user = AuthStore.getCurrentUser();
             const name = document.getElementById('profileName').value.trim();
             const email = document.getElementById('profileEmail').value.trim();
             const phone = document.getElementById('profilePhone').value.trim();
@@ -133,11 +134,10 @@
                 const res = await fetch(`${API_BASE}/auth/update-profile`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, phone, age, gender })
+                    body: JSON.stringify({ user_id: user.id, name, email, phone, age, gender })
                 });
                 const result = await res.json();
                 if (result.id) {
-                    const user = AuthStore.getCurrentUser();
                     user.name = name; user.email = email; user.phone = phone;
                     user.age = age || null; user.gender = gender || null;
                     AuthStore.setCurrentUser(user);
@@ -150,6 +150,7 @@
 
         document.getElementById('passwordForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+            const user = AuthStore.getCurrentUser();
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
@@ -160,7 +161,7 @@
                 const res = await fetch(`${API_BASE}/auth/change-password`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+                    body: JSON.stringify({ user_id: user.id, current_password: currentPassword, new_password: newPassword })
                 });
                 const result = await res.json();
                 if (result.message) {
