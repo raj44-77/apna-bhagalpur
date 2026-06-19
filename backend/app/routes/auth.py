@@ -14,7 +14,9 @@ from ..models.verification_code import VerificationCode
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-SECRET_KEY = "apna-bhagalpur-jwt-secret-2024"
+from ..config import get_settings
+settings = get_settings()
+SECRET_KEY = settings.jwt_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
