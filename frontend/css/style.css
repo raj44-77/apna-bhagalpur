@@ -576,6 +576,10 @@ select.form-control {
 [data-theme="dark"] .auth-area span { color: #CBD5E1; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; }
 
+/* Dark mode - inline background fixes */
+[data-theme="dark"] section[style*="background: white"] { background: var(--bg) !important; }
+[data-theme="dark"] section[style*="background: var(--secondary)"] { background: var(--bg) !important; }
+
 /* ============================================
    RESPONSIVE
    ============================================ */
