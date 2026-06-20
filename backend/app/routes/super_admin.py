@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import date, timedelta
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.clinic import Clinic
@@ -10,6 +12,7 @@ from ..models.user import User
 import os
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 SUPER_ADMIN_KEY = os.getenv("SUPER_ADMIN_KEY", "apna-bhagalpur-super-admin-2024")
 
@@ -20,7 +23,8 @@ def verify_super_admin(x_api_key: str = Header(None)):
 
 
 @router.get("/overview")
-async def get_overview(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
+@limiter.limit("20/minute")
+async def get_overview(request: Request, db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -58,7 +62,8 @@ async def get_overview(db: Session = Depends(get_db), _: bool = Depends(verify_s
 
 
 @router.get("/clinic-performance")
-async def get_clinic_performance(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
+@limiter.limit("20/minute")
+async def get_clinic_performance(request: Request, db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -110,7 +115,8 @@ async def get_clinic_performance(db: Session = Depends(get_db), _: bool = Depend
 
 
 @router.get("/daily-stats")
-async def get_daily_stats(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
+@limiter.limit("20/minute")
+async def get_daily_stats(request: Request, db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     today = date.today()
     start_date = today - timedelta(days=29)
     
@@ -144,7 +150,8 @@ async def get_daily_stats(db: Session = Depends(get_db), _: bool = Depends(verif
 
 
 @router.get("/recent")
-async def get_recent(db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
+@limiter.limit("20/minute")
+async def get_recent(request: Request, db: Session = Depends(get_db), _: bool = Depends(verify_super_admin)):
     appointments = db.query(Appointment).order_by(
         Appointment.appointment_date.desc(),
         Appointment.slot_number.desc()

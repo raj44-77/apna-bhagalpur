@@ -20,7 +20,8 @@ async def get_clinics(request: Request, db: Session = Depends(get_db)):
     return [{"id": c.id, "name": c.name, "address": c.address, "phone": c.phone, "email": c.email, "timing": c.timing, "clinic_type": c.clinic_type, "emoji": CLINIC_EMOJIS.get(c.id, "🏥"), "is_active": c.is_active, "doctors": [{"id": d.id, "name": d.name, "specialty": d.specialty, "max_slots": d.max_slots, "consultation_fee": float(d.consultation_fee) if d.consultation_fee else 0, "is_available": d.is_available} for d in c.doctors]} for c in clinics]
 
 @router.get("/rankings")
-async def get_clinic_rankings(days: int = 30, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+async def get_clinic_rankings(request: Request, days: int = 30, db: Session = Depends(get_db)):
     today = date.today()
     start_date = today - timedelta(days=days)
     clinics = db.query(Clinic).all()

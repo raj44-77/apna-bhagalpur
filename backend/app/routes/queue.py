@@ -27,7 +27,8 @@ async def get_queue_status(request: Request, clinic_id: int, appointment_date: s
 
 
 @router.post('/pause/{clinic_id}')
-async def toggle_pause(clinic_id: int, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def toggle_pause(request: Request, clinic_id: int, db: Session = Depends(get_db)):
     today = date.today()
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0, is_paused=False); db.add(queue); db.flush()

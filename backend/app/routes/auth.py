@@ -92,7 +92,8 @@ async def login(request: Request, data: LoginData, db: Session = Depends(get_db)
 
 
 @router.post("/google-login")
-async def google_login(data: dict, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def google_login(request: Request, data: dict, db: Session = Depends(get_db)):
     try:
         email = data.get("email")
         name = data.get("name", "Google User")
