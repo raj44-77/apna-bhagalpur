@@ -8,6 +8,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from .config import get_settings
 from .routes import auth, clinics, appointments, admin, queue, websocket, analytics, super_admin
 
@@ -34,9 +35,27 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Server"] = ""  # Hide server info
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+# ===== REQUEST BODY SIZE LIMIT =====
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import JSONResponse
+
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > self.MAX_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request body too large. Maximum 5 MB."}
+            )
+        return await call_next(request)
+
+app.add_middleware(MaxBodySizeMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
