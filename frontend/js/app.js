@@ -342,3 +342,15 @@ document.addEventListener('click', function(e) {
         btn.textContent = originalText;
     }, 5000);
 });
+
+    // ===== AUTO-ADD PRIVACY & TERMS LINKS TO ALL FOOTERS =====
+document.addEventListener('DOMContentLoaded', function() {
+    const footerBottom = document.querySelector('.footer-bottom');
+    if (!footerBottom) return;
+    
+    // Check if links already exist
+    if (footerBottom.innerHTML.includes('privacy.html')) return;
+    
+    const linksHTML = '<p style="margin-top:4px;"><a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
+    footerBottom.insertAdjacentHTML('beforeend', linksHTML);
+});
