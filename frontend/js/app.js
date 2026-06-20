@@ -159,7 +159,6 @@ function initNavbar() {
   const hamburger = document.querySelector('.hamburger');
   const navLinks = document.querySelector('.nav-links');
   hamburger?.addEventListener('click', () => navLinks?.classList.toggle('open'));
-  // Set active link
   const current = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-links a').forEach(a => {
     if (a.getAttribute('href') === current) a.classList.add('active');
@@ -194,9 +193,9 @@ function getStatusBadge(status) {
 }
 
 function getTypeBadge(type) {
-  return type === 'walkin'
-    ? `<span class="badge badge-warning">🚶 Walk-in</span>`
-    : `<span class="badge badge-primary">💻 Online</span>`;
+  if (type === 'revisit') return '<span class="badge badge-warning">🔄 Revisit</span>';
+  if (type === 'walkin') return '<span class="badge badge-warning">🚶 Walk-in</span>';
+  return '<span class="badge badge-primary">💻 Online</span>';
 }
 
 // Init on load
@@ -209,53 +208,36 @@ document.addEventListener('DOMContentLoaded', () => {
 // DARK MODE FUNCTIONALITY
 // ============================================================
 
-// Check for saved theme preference
 function getThemePreference() {
   const savedTheme = localStorage.getItem('ab_theme');
   if (savedTheme) return savedTheme;
-  
-  // Check system preference
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
   }
-  
   return 'light';
 }
 
-// Apply theme
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('ab_theme', theme);
-  
-  // Update toggle button icons
   updateToggleIcons(theme);
 }
 
-// Update toggle button icons
 function updateToggleIcons(theme) {
   const floatingBtn = document.getElementById('themeToggleFloating');
   if (floatingBtn) {
     floatingBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
   }
-  
-  const navBtns = document.querySelectorAll('.nav-theme-toggle');
-  navBtns.forEach(btn => {
-    btn.innerHTML = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
-  });
 }
 
-// Toggle theme
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
   applyTheme(newTheme);
 }
 
-// Create floating toggle button
 function createFloatingToggle() {
-  // Check if already exists
   if (document.getElementById('themeToggleFloating')) return;
-  
   const btn = document.createElement('button');
   btn.id = 'themeToggleFloating';
   btn.className = 'theme-toggle';
@@ -264,27 +246,9 @@ function createFloatingToggle() {
   document.body.appendChild(btn);
 }
 
-// Add toggle to navbar
-function addNavToggle() {
-  const navLinks = document.querySelector('.nav-links');
-  if (!navLinks) return;
-  
-  // Check if already exists
-  if (navLinks.querySelector('.nav-theme-toggle')) return;
-  
-  const li = document.createElement('li');
-  const btn = document.createElement('button');
-  btn.className = 'nav-theme-toggle';
-  btn.onclick = toggleTheme;
-  li.appendChild(btn);
-  navLinks.appendChild(li);
-}
-
-// Listen for system theme changes
 function listenForSystemChanges() {
   if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      // Only change if user hasn't manually set a preference
       if (!localStorage.getItem('ab_theme')) {
         applyTheme(e.matches ? 'dark' : 'light');
       }
@@ -292,29 +256,19 @@ function listenForSystemChanges() {
   }
 }
 
-// Initialize dark mode
 function initDarkMode() {
   const theme = getThemePreference();
   applyTheme(theme);
   createFloatingToggle();
-  addNavToggle();
   listenForSystemChanges();
 }
 
-// Add to existing DOMContentLoaded or call separately
 document.addEventListener('DOMContentLoaded', () => {
   initDarkMode();
 });
 
-// If DOM is already loaded, init immediately
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   setTimeout(initDarkMode, 1);
-}
-
-function getTypeBadge(type) {
-    if (type === 'revisit') return '<span class="badge badge-warning">🔄 Revisit</span>';
-    if (type === 'walkin') return '<span class="badge badge-warning">🚶 Walk-in</span>';
-    return '<span class="badge badge-primary">💻 Online</span>';
 }
 
 // ===== GLOBAL BUTTON LOADING =====
@@ -322,12 +276,10 @@ document.addEventListener('click', function(e) {
     const btn = e.target.closest('button, .btn');
     if (!btn || btn.disabled || btn.classList.contains('no-loader')) return;
     
-    // Skip if it's a logout button, modal close, hamburger, or theme toggle
     if (btn.closest('.hamburger') || btn.closest('.modal-close') || 
         btn.closest('.toast-close') || btn.classList.contains('theme-toggle') ||
-        btn.getAttribute('type') === 'submit') return;  // ← Don't block form submit buttons
+        btn.getAttribute('type') === 'submit') return;
     
-    // Skip if it's inside a form (let the form handle it)
     if (btn.closest('form') && btn.tagName === 'BUTTON') return;
     
     const originalText = btn.textContent;
@@ -335,7 +287,6 @@ document.addEventListener('click', function(e) {
     btn.disabled = true;
     btn.textContent = 'Loading...';
     
-    // Remove after 5 seconds max (safety)
     setTimeout(() => {
         btn.classList.remove('btn-loading');
         btn.disabled = false;
@@ -343,14 +294,11 @@ document.addEventListener('click', function(e) {
     }, 5000);
 });
 
-    // ===== AUTO-ADD PRIVACY & TERMS LINKS TO ALL FOOTERS =====
+// ===== AUTO-ADD PRIVACY & TERMS LINKS TO ALL FOOTERS =====
 document.addEventListener('DOMContentLoaded', function() {
     const footerBottom = document.querySelector('.footer-bottom');
     if (!footerBottom) return;
-    
-    // Check if links already exist
     if (footerBottom.innerHTML.includes('privacy.html')) return;
-    
     const linksHTML = '<p style="margin-top:4px;"><a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
     footerBottom.insertAdjacentHTML('beforeend', linksHTML);
 });
