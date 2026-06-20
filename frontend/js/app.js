@@ -322,31 +322,23 @@ document.addEventListener('click', function(e) {
     const btn = e.target.closest('button, .btn');
     if (!btn || btn.disabled || btn.classList.contains('no-loader')) return;
     
-    // Skip if it's a logout button, modal close, or hamburger
+    // Skip if it's a logout button, modal close, hamburger, or theme toggle
     if (btn.closest('.hamburger') || btn.closest('.modal-close') || 
-        btn.closest('.toast-close') || btn.classList.contains('theme-toggle')) return;
+        btn.closest('.toast-close') || btn.classList.contains('theme-toggle') ||
+        btn.getAttribute('type') === 'submit') return;  // ← Don't block form submit buttons
     
-    // Add loading state
-    const originalHTML = btn.innerHTML;
+    // Skip if it's inside a form (let the form handle it)
+    if (btn.closest('form') && btn.tagName === 'BUTTON') return;
+    
+    const originalText = btn.textContent;
     btn.classList.add('btn-loading');
     btn.disabled = true;
+    btn.textContent = 'Loading...';
     
-    // Remove after 3 seconds max (safety)
+    // Remove after 5 seconds max (safety)
     setTimeout(() => {
         btn.classList.remove('btn-loading');
         btn.disabled = false;
-        btn.innerHTML = originalHTML;
-    }, 3000);
-    
-    // Also remove on form submit success
-    const form = btn.closest('form');
-    if (form) {
-        form.addEventListener('submit', function() {
-            setTimeout(() => {
-                btn.classList.remove('btn-loading');
-                btn.disabled = false;
-                btn.innerHTML = originalHTML;
-            }, 500);
-        });
-    }
+        btn.textContent = originalText;
+    }, 5000);
 });
