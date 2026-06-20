@@ -316,3 +316,37 @@ function getTypeBadge(type) {
     if (type === 'walkin') return '<span class="badge badge-warning">🚶 Walk-in</span>';
     return '<span class="badge badge-primary">💻 Online</span>';
 }
+
+// ===== GLOBAL BUTTON LOADING =====
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('button, .btn');
+    if (!btn || btn.disabled || btn.classList.contains('no-loader')) return;
+    
+    // Skip if it's a logout button, modal close, or hamburger
+    if (btn.closest('.hamburger') || btn.closest('.modal-close') || 
+        btn.closest('.toast-close') || btn.classList.contains('theme-toggle')) return;
+    
+    // Add loading state
+    const originalHTML = btn.innerHTML;
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+    
+    // Remove after 3 seconds max (safety)
+    setTimeout(() => {
+        btn.classList.remove('btn-loading');
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }, 3000);
+    
+    // Also remove on form submit success
+    const form = btn.closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            setTimeout(() => {
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }, 500);
+        });
+    }
+});
