@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin.html
+Disallow: /super-admin.html
+Disallow: /admin-analytics.html
+
+Sitemap: https://apna-bhagalpur.onrender.com/sitemap.xml
