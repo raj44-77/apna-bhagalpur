@@ -93,7 +93,7 @@
         </div>
     </section>
 
-    <section class="section" style="background: white;">
+    <section class="section" style="background: var(--white);">
         <div class="container">
             <div class="section-header">
                 <span class="eyebrow">🏆 TOP PERFORMERS</span>
@@ -107,13 +107,20 @@
         </div>
     </section>
 
-    <section class="section" style="background: white;">
+    <section class="section" style="background: var(--white);">
         <div class="container">
             <div class="section-header">
                 <span class="eyebrow">OUR NETWORK</span>
                 <h2>Partner Clinics in Bhagalpur</h2>
                 <p>Trusted healthcare providers across Bhagalpur city</p>
             </div>
+            
+            <!-- 🔍 SEARCH BAR -->
+            <div class="form-group" style="max-width:500px;margin:0 auto 24px;">
+                <input type="text" class="form-control" id="clinicSearch" placeholder="🔍 Search clinic by name..." oninput="filterClinics()" style="padding:14px 16px;font-size:1rem;border-radius:12px;">
+            </div>
+            <div id="searchResults" style="display:none;max-width:500px;margin:0 auto 8px;font-size:0.82rem;color:var(--text-light);"></div>
+            
             <div class="grid-3" id="clinicCards"></div>
         </div>
     </section>
@@ -146,6 +153,7 @@
                 <p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur, Bihar</p>
                 <p>Developed by: Kumar Raj</p>
                 <p>
+                    <a href="about.html" style="color:white;opacity:0.6;">About</a> |
                     <a href="privacy.html" style="color:white;opacity:0.6;">Privacy Policy</a> | 
                     <a href="terms.html" style="color:white;opacity:0.6;">Terms of Service</a>
                 </p>
@@ -158,6 +166,8 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+        let allClinicsData = [];
+
         async function loadTopClinics() {
             try {
                 const res = await fetch(`${API_BASE}/clinics/rankings?days=30`);
@@ -182,42 +192,65 @@
             } catch(e) {}
         }
 
+        function filterClinics() {
+            const searchTerm = document.getElementById('clinicSearch').value.trim().toLowerCase();
+            const container = document.getElementById('clinicCards');
+            const resultsInfo = document.getElementById('searchResults');
+            
+            if (!allClinicsData.length) return;
+            
+            if (searchTerm) {
+                const filtered = allClinicsData.filter(c => 
+                    (c.name || '').toLowerCase().includes(searchTerm) ||
+                    (c.clinic_type || c.type || '').toLowerCase().includes(searchTerm) ||
+                    (c.address || '').toLowerCase().includes(searchTerm)
+                );
+                displayClinics(filtered, container);
+                resultsInfo.style.display = 'block';
+                resultsInfo.textContent = `Found ${filtered.length} clinic(s) matching "${document.getElementById('clinicSearch').value}"`;
+            } else {
+                displayClinics(allClinicsData, container);
+                resultsInfo.style.display = 'none';
+            }
+        }
+
+        function displayClinics(clinics, container) {
+            container.innerHTML = '';
+            if (clinics.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>No clinics found</h3><p>Try a different search term</p></div>';
+                return;
+            }
+            clinics.forEach(clinic => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<div class="card-body">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji || '🏥'}</div>
+                    <h3 style="margin-bottom:4px;">${clinic.name}</h3>
+                    <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address || 'N/A'}</p>
+                    <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone || 'N/A'}</p>
+                    <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing || '9:00 AM - 5:00 PM'}</p>
+                    <span class="badge badge-primary">${clinic.clinic_type || clinic.type || 'Clinic'}</span>
+                    <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
+                </div>`;
+                container.appendChild(card);
+            });
+        }
+
         async function renderClinics() {
             const container = document.getElementById('clinicCards');
             try {
                 const clinics = await API.getClinics();
-                container.innerHTML = '';
-                clinics.forEach(clinic => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `<div class="card-body">
-                        <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji}</div>
-                        <h3 style="margin-bottom:4px;">${clinic.name}</h3>
-                        <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address}</p>
-                        <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone || 'N/A'}</p>
-                        <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing || '9:00 AM - 5:00 PM'}</p>
-                        <span class="badge badge-primary">${clinic.clinic_type || 'Clinic'}</span>
-                        <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
-                    </div>`;
-                    container.appendChild(card);
-                });
+                allClinicsData = clinics;
+                displayClinics(allClinicsData, container);
             } catch(e) {
-                CLINICS.forEach(clinic => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `<div class="card-body">
-                        <div style="font-size:2.5rem;margin-bottom:12px;">${clinic.emoji}</div>
-                        <h3 style="margin-bottom:4px;">${clinic.name}</h3>
-                        <p style="color:var(--text-light);font-size:0.85rem;">📍 ${clinic.address}</p>
-                        <p style="color:var(--text-light);font-size:0.85rem;">📞 ${clinic.phone}</p>
-                        <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:12px;">🕐 ${clinic.timing}</p>
-                        <span class="badge badge-primary">${clinic.type}</span>
-                        <div style="margin-top:12px;"><a href="booking.html?clinic=${clinic.id}" class="btn btn-outline btn-sm">📅 Book Now</a></div>
-                    </div>`;
-                    container.appendChild(card);
-                });
+                allClinicsData = CLINICS.map(c => ({
+                    id: c.id, name: c.name, emoji: c.emoji, address: c.address,
+                    phone: c.phone, timing: c.timing, clinic_type: c.type
+                }));
+                displayClinics(allClinicsData, container);
             }
         }
+
         document.addEventListener('DOMContentLoaded', () => {
             renderClinics();
             loadTopClinics();
