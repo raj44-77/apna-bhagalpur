@@ -10,6 +10,7 @@ from ..models.queue import QueueState
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from .websocket import broadcast
+from .auth import require_clinic_admin
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -28,7 +29,7 @@ def to_minutes(time_str):
 
 @router.post("/next-slot/{clinic_id}")
 @limiter.limit("20/minute")
-async def next_slot(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def next_slot(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if current: current.status = "completed"
@@ -48,7 +49,7 @@ async def next_slot(request: Request, clinic_id: int, appointment_date: str = No
 
 @router.post("/mark-absent/{clinic_id}")
 @limiter.limit("20/minute")
-async def mark_absent(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def mark_absent(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     current = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "current").first()
     if not current: raise HTTPException(status_code=404, detail="No current patient")
@@ -62,7 +63,7 @@ async def mark_absent(request: Request, clinic_id: int, appointment_date: str = 
 
 @router.post("/add-walkin/{clinic_id}")
 @limiter.limit("20/minute")
-async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", appointment_date: str = None, db: Session = Depends(get_db)):
+async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_name: str, patient_phone: str = "", user: dict = Depends(require_clinic_admin), appointment_date: str = None, db: Session = Depends(get_db)):
     try:
         today = appointment_date if appointment_date else str(date.today())
         count = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).count()
@@ -108,7 +109,7 @@ async def get_dashboard(request: Request, clinic_id: int, appointment_date: str 
 
 
 @router.post("/lock/{clinic_id}")
-async def lock_queue(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def lock_queue(clinic_id: int, user: dict = Depends(require_clinic_admin), appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0, is_locked=True); db.add(queue)
@@ -118,7 +119,7 @@ async def lock_queue(clinic_id: int, appointment_date: str = None, db: Session =
 
 
 @router.post("/unlock/{clinic_id}")
-async def unlock_queue(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def unlock_queue(clinic_id: int, user: dict = Depends(require_clinic_admin), appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if queue: queue.is_locked = False; db.commit()
@@ -141,7 +142,7 @@ async def get_absentees(clinic_id: int, appointment_date: str = None, db: Sessio
 
 
 @router.post("/start-treatment/{appointment_id}")
-async def start_treatment(appointment_id: int, db: Session = Depends(get_db)):
+async def start_treatment(appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
@@ -152,7 +153,7 @@ async def start_treatment(appointment_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/reschedule/{appointment_id}")
-async def reschedule_appointment(appointment_id: int, new_date: str, db: Session = Depends(get_db)):
+async def reschedule_appointment(appointment_id: int, new_date: str, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
@@ -163,7 +164,7 @@ async def reschedule_appointment(appointment_id: int, new_date: str, db: Session
 
 
 @router.delete("/delete-appointment/{appointment_id}")
-async def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
+async def delete_appointment(appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Appointment not found")
     clinic_id = appointment.clinic_id

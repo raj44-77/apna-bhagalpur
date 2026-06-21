@@ -4,6 +4,11 @@
 
 const API_BASE = 'https://apna-bhagalpur.onrender.com/api';
 
+function getAuthHeaders() {
+    const token = localStorage.getItem('ab_token');
+    return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
 const API = {
     async login(email, password) {
         const res = await fetch(`${API_BASE}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
@@ -50,37 +55,37 @@ const API = {
     async getDashboard(clinicId, appointmentDate = null) {
         let url = `${API_BASE}/admin/dashboard/${clinicId}`;
         if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { headers: getAuthHeaders() });
         return res.json();
     },
     async nextSlot(clinicId, appointmentDate = null) {
         let url = `${API_BASE}/admin/next-slot/${clinicId}`;
         if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-        const res = await fetch(url, { method: 'POST' });
+        const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async markAbsent(clinicId, appointmentDate = null) {
         let url = `${API_BASE}/admin/mark-absent/${clinicId}`;
         if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-        const res = await fetch(url, { method: 'POST' });
+        const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async addWalkin(clinicId, data, appointmentDate = null) {
         let url = `${API_BASE}/admin/add-walkin/${clinicId}?doctor_id=${data.doctor_id}&patient_name=${encodeURIComponent(data.patient_name)}&patient_phone=${encodeURIComponent(data.patient_phone || '')}`;
         if (appointmentDate) url += `&appointment_date=${appointmentDate}`;
-        const res = await fetch(url, { method: 'POST' });
+        const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async lockQueue(clinicId, appointmentDate = null) {
         let url = `${API_BASE}/admin/lock/${clinicId}`;
         if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-        const res = await fetch(url, { method: 'POST' });
+        const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async unlockQueue(clinicId, appointmentDate = null) {
         let url = `${API_BASE}/admin/unlock/${clinicId}`;
         if (appointmentDate) url += `?appointment_date=${appointmentDate}`;
-        const res = await fetch(url, { method: 'POST' });
+        const res = await fetch(url, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async isQueueLocked(clinicId, appointmentDate = null) {
@@ -94,7 +99,7 @@ const API = {
         return res.json();
     },
     async togglePause(clinicId) {
-        const res = await fetch(`${API_BASE}/queue/pause/${clinicId}`, { method: 'POST' });
+        const res = await fetch(`${API_BASE}/queue/pause/${clinicId}`, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async getAbsentees(clinicId, appointmentDate = null) {
@@ -104,16 +109,15 @@ const API = {
         return res.json();
     },
     async startTreatment(appointmentId) {
-        const res = await fetch(`${API_BASE}/admin/start-treatment/${appointmentId}`, { method: 'POST' });
+        const res = await fetch(`${API_BASE}/admin/start-treatment/${appointmentId}`, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
     async rescheduleAppointment(appointmentId, newDate) {
-        const res = await fetch(`${API_BASE}/admin/reschedule/${appointmentId}?new_date=${newDate}`, { method: 'POST' });
+        const res = await fetch(`${API_BASE}/admin/reschedule/${appointmentId}?new_date=${newDate}`, { method: 'POST', headers: getAuthHeaders() });
         return res.json();
     },
-
     async deleteAppointment(appointmentId) {
-    const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' });
-    return res.json();
+        const res = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE', headers: getAuthHeaders() });
+        return res.json();
     }
-};    
+};

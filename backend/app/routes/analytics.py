@@ -6,24 +6,22 @@ from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.doctor import Doctor
 from ..models.clinic import Clinic
+from .auth import require_clinic_admin
 
 router = APIRouter()
 
 
 @router.get("/overview/{clinic_id}")
-async def get_overview(clinic_id: int, days: int = 7, db: Session = Depends(get_db)):
-    """Get overview stats for last N days"""
+async def get_overview(clinic_id: int, days: int = 7, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
-    # Total appointments in period
     total = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date >= start_date,
         Appointment.appointment_date <= today
     ).count()
     
-    # Status breakdown
     completed = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date >= start_date,
@@ -45,13 +43,11 @@ async def get_overview(clinic_id: int, days: int = 7, db: Session = Depends(get_
         Appointment.status == "waiting"
     ).count()
     
-    # Today's count
     today_count = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date == today
     ).count()
     
-    # Average consultation time
     avg_time = db.query(func.avg(Appointment.actual_consultation_time)).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date >= start_date,
@@ -75,8 +71,7 @@ async def get_overview(clinic_id: int, days: int = 7, db: Session = Depends(get_
 
 
 @router.get("/daily/{clinic_id}")
-async def get_daily_stats(clinic_id: int, days: int = 7, db: Session = Depends(get_db)):
-    """Get daily breakdown for charts"""
+async def get_daily_stats(clinic_id: int, days: int = 7, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
@@ -106,8 +101,7 @@ async def get_daily_stats(clinic_id: int, days: int = 7, db: Session = Depends(g
 
 
 @router.get("/doctors/{clinic_id}")
-async def get_doctor_stats(clinic_id: int, days: int = 7, db: Session = Depends(get_db)):
-    """Get per-doctor performance"""
+async def get_doctor_stats(clinic_id: int, days: int = 7, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
@@ -152,8 +146,7 @@ async def get_doctor_stats(clinic_id: int, days: int = 7, db: Session = Depends(
 
 
 @router.get("/hourly/{clinic_id}")
-async def get_hourly_stats(clinic_id: int, days: int = 7, db: Session = Depends(get_db)):
-    """Get hourly distribution for peak hours"""
+async def get_hourly_stats(clinic_id: int, days: int = 7, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
@@ -182,8 +175,7 @@ async def get_hourly_stats(clinic_id: int, days: int = 7, db: Session = Depends(
 
 
 @router.get("/recent/{clinic_id}")
-async def get_recent_appointments(clinic_id: int, limit: int = 20, db: Session = Depends(get_db)):
-    """Get recent appointments"""
+async def get_recent_appointments(clinic_id: int, limit: int = 20, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointments = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id
     ).order_by(Appointment.appointment_date.desc(), Appointment.slot_number.desc()).limit(limit).all()

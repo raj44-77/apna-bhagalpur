@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from ..models.verification_code import VerificationCode
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+security = HTTPBearer()
 
 from ..config import get_settings
 settings = get_settings()
@@ -63,6 +65,24 @@ def create_access_token(user_id: int, user_type: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": str(user_id), "type": user_type, "exp": expire}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub"))
+        user_type = payload.get("type")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return {"user_id": user_id, "user_type": user_type}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+def require_clinic_admin(user: dict = Depends(get_current_user)):
+    if user["user_type"] not in ["clinic", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied. Clinic admin only.")
+    return user
 
 
 @router.post("/login")
