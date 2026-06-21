@@ -100,10 +100,18 @@
                     <div class="divider"></div>
                     <div id="bookingDetails" style="margin: 16px 0;"></div>
                     <div class="divider"></div>
-                    <div style="display: flex; gap: 12px; margin-top: 16px;">
-                        <a href="tracking.html" class="btn btn-primary" style="flex: 1;" id="trackLink">📍 Track Your Slot</a>
-                        <button class="btn btn-outline" style="flex: 1;" onclick="bookAnother()">📅 Book Another</button>
+                    
+                    <!-- Payment Notice -->
+                    <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 10px; padding: 14px 18px; text-align: center; margin-bottom: 20px;">
+                        <p style="font-size: 0.9rem; font-weight: 700; color: #92400E; margin: 0;">💰 Pay at clinic before consultation</p>
+                        <p style="font-size: 0.75rem; color: #A16207; margin: 4px 0 0 0;">Consultation fee is collected directly by the clinic</p>
                     </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <a href="tracking.html" class="btn btn-primary" style="flex: 1;" id="trackLink">📍 Track Your Slot</a>
+                        <button class="btn btn-outline" style="flex: 1;" onclick="downloadBookingPDF()">📥 Download Receipt</button>
+                    </div>
+                    <button class="btn btn-outline btn-block" onclick="bookAnother()">📅 Book Another</button>
                 </div>
             </div>
         </div>
@@ -205,23 +213,71 @@
                 submitBtn.innerHTML = '✅ Confirm Booking';
             }
         });
+
         function showConfirmation(booking) {
-    document.getElementById('bookingFormCard').style.display = 'none';
-    document.getElementById('confirmationCard').style.display = 'block';
-    document.getElementById('bookingDetails').innerHTML = `
-        <p><strong>🆔 Booking ID:</strong> <span style="font-size:1.5rem;color:var(--primary);font-weight:700;">${booking.booking_id}</span></p>
-        <p style="font-size:0.85rem;color:var(--text-light);">Save this ID to track your queue position</p>
-        <div class="divider"></div>
-        <p><strong>👤 Patient:</strong> ${booking.patient_name} ${booking.patient_age ? '('+booking.patient_age+'y)' : ''} ${booking.patient_gender || ''}</p>
-        <p><strong>🏥 Clinic:</strong> ${booking.clinic_name}</p>
-        <p><strong>👨‍⚕️ Doctor:</strong> ${booking.doctor_name}</p>
-        <p><strong>📅 Date:</strong> ${formatDate(booking.appointment_date)}</p>
-        <p><strong>🕐 Time:</strong> ${booking.time_slot}</p>
-        <p><strong>🔢 Slot:</strong> #${booking.slot_number}</p>
-        <p>${getStatusBadge(booking.status)}</p>
-    `;
-    document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&booking=${booking.booking_id}`;
-}
+            document.getElementById('bookingFormCard').style.display = 'none';
+            document.getElementById('confirmationCard').style.display = 'block';
+            document.getElementById('bookingDetails').innerHTML = `
+                <p><strong>🆔 Booking ID:</strong> <span style="font-size:1.5rem;color:var(--primary);font-weight:700;">${booking.booking_id}</span></p>
+                <p style="font-size:0.85rem;color:var(--text-light);">Save this ID to track your queue position</p>
+                <div class="divider"></div>
+                <p><strong>👤 Patient:</strong> ${booking.patient_name} ${booking.patient_age ? '('+booking.patient_age+'y)' : ''} ${booking.patient_gender || ''}</p>
+                <p><strong>🏥 Clinic:</strong> ${booking.clinic_name}</p>
+                <p><strong>👨‍⚕️ Doctor:</strong> ${booking.doctor_name}</p>
+                <p><strong>📅 Date:</strong> ${formatDate(booking.appointment_date)}</p>
+                <p><strong>🕐 Time:</strong> ${booking.time_slot}</p>
+                <p><strong>🔢 Slot:</strong> #${booking.slot_number}</p>
+                <p>${getStatusBadge(booking.status)}</p>
+            `;
+            document.getElementById('trackLink').href = `tracking.html?clinic=${booking.clinic_id}&booking=${booking.booking_id}`;
+        }
+
+        function downloadBookingPDF() {
+            if (!currentBooking) return;
+            
+            const formattedDate = formatDate(currentBooking.appointment_date);
+            
+            const html = `<html><head><meta charset="UTF-8"><title>Booking Receipt - ${currentBooking.booking_id}</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 30px; color: #333; text-align: center; }
+                .header { border-bottom: 3px solid #2563EB; padding-bottom: 16px; margin-bottom: 24px; }
+                .header h1 { color: #1E40AF; margin: 0; font-size: 1.5rem; }
+                .header p { color: #64748B; margin: 4px 0 0 0; font-size: 0.85rem; }
+                .booking-id { font-size: 1.8rem; font-weight: bold; color: #2563EB; margin: 20px 0; }
+                .details { text-align: left; max-width: 350px; margin: 0 auto; }
+                .details p { margin: 10px 0; font-size: 0.95rem; border-bottom: 1px dotted #E2E8F0; padding-bottom: 8px; }
+                .details strong { color: #1E40AF; }
+                .payment-notice { background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 14px; margin: 24px 0; font-weight: bold; color: #92400E; }
+                .footer { margin-top: 30px; font-size: 0.75rem; color: #94A3B8; border-top: 1px solid #E2E8F0; padding-top: 16px; }
+            </style></head><body>
+            <div class="header">
+                <h1>🏥 Apna Bhagalpur</h1>
+                <p>Bhagalpur ka apna doctor appointment system</p>
+            </div>
+            <h2>BOOKING RECEIPT</h2>
+            <div class="booking-id">${currentBooking.booking_id}</div>
+            <div class="details">
+                <p><strong>👤 Patient:</strong> ${currentBooking.patient_name} ${currentBooking.patient_age ? '('+currentBooking.patient_age+'y)' : ''} ${currentBooking.patient_gender || ''}</p>
+                <p><strong>📞 Phone:</strong> ${currentBooking.patient_phone || 'N/A'}</p>
+                <p><strong>🏥 Clinic:</strong> ${currentBooking.clinic_name}</p>
+                <p><strong>👨‍⚕️ Doctor:</strong> ${currentBooking.doctor_name}</p>
+                <p><strong>📅 Date:</strong> ${formattedDate}</p>
+                <p><strong>🕐 Time:</strong> ${currentBooking.time_slot}</p>
+                <p><strong>🔢 Slot:</strong> #${currentBooking.slot_number}</p>
+            </div>
+            <div class="payment-notice">💰 Pay at clinic before consultation</div>
+            <div class="footer">
+                <p>Generated by Apna Bhagalpur</p>
+                <p>© ${new Date().getFullYear()} Apna Bhagalpur. All rights reserved.</p>
+            </div>
+            </body></html>`;
+            
+            const w = window.open('', '_blank', 'width=400,height=600');
+            w.document.write(html);
+            w.document.close();
+            setTimeout(() => { w.print(); }, 500);
+            showToast('Receipt Ready!', 'Save or print your booking receipt', 'success');
+        }
 
         function bookAnother() {
             document.getElementById('bookingFormCard').style.display = 'block';
