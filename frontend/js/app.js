@@ -299,6 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const footerBottom = document.querySelector('.footer-bottom');
     if (!footerBottom) return;
     if (footerBottom.innerHTML.includes('privacy.html')) return;
-    const linksHTML = '<p style="margin-top:4px;"><a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
+    const linksHTML = '<p style="margin-top:4px;"><a href="about.html" style="color:white;opacity:0.5;font-size:0.75rem;">About</a> | <a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
     footerBottom.insertAdjacentHTML('beforeend', linksHTML);
 });
