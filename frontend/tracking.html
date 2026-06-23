@@ -215,7 +215,12 @@
                     return;
                 }
                 
-                currentTracking = { clinicId: cid, bookingId: bid, slotNum: d.slot_number };
+                currentTracking = { 
+                    clinicId: cid, 
+                    bookingId: bid, 
+                    slotNum: d.slot_number,
+                    appointmentDate: d.appointment_date 
+                };
                 document.getElementById('searchCard').style.display = 'none';
                 document.getElementById('trackingDisplay').style.display = 'block';
                 await updateTrackingDisplay();
@@ -232,13 +237,23 @@
             try {
                 const d = await API.trackByBooking(currentTracking.clinicId, currentTracking.bookingId);
                 
+                // Update booking date if returned from API
+                if (d.appointment_date) {
+                    currentTracking.appointmentDate = d.appointment_date;
+                }
+                
                 // Update stats
                 document.getElementById('queuePosition').textContent = `#${d.queue_position}`;
                 document.getElementById('yourTime').textContent = d.time_slot || '-';
                 document.getElementById('queueAhead').textContent = d.queue_ahead;
 
-                // Get public queue data
-                const queueStatus = await API.getQueueStatus(currentTracking.clinicId);
+                // Get queue data for the BOOKING'S date (not today)
+                const bookingDate = currentTracking.appointmentDate || d.appointment_date;
+                const queueUrl = `${API_BASE}/queue/status/${currentTracking.clinicId}` +
+                    (bookingDate ? `?appointment_date=${bookingDate}` : '');
+                const qRes = await fetch(queueUrl);
+                const queueStatus = await qRes.json();
+                
                 const appointments = queueStatus.appointments || [];
                 const totalSlots = appointments.length || 1;
                 
