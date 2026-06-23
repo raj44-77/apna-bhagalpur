@@ -12,18 +12,35 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
+def to_minutes(time_str):
+    if not time_str: return 9999
+    try:
+        t, period = time_str.strip().split()
+        h, m = map(int, t.split(':'))
+        if period == 'PM' and h != 12: h += 12
+        if period == 'AM' and h == 12: h = 0
+        return h * 60 + m
+    except: return 9999
+
+
 @router.get('/status/{clinic_id}')
 @limiter.limit("30/minute")
 async def get_queue_status(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: return {'clinic_id': clinic_id, 'current_slot': 0, 'appointments': []}
-    appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).order_by(Appointment.time_slot).all()
+    
+    appointments = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id, 
+        Appointment.appointment_date == today
+    ).all()
+    appointments.sort(key=lambda a: to_minutes(a.time_slot))
+    
     return {
         'clinic_id': clinic_id, 'current_slot': queue.current_slot_number,
         'total_served': queue.total_patients_served, 'total_absent': queue.total_absent,
         'total_walkins': queue.total_walkins, 'is_paused': queue.is_paused,
-        'appointments': [{'id': a.id, 'slot_number': a.slot_number, 'patient_name': a.patient_name, 'status': a.status, 'booking_type': a.booking_type, 'time_slot': a.time_slot} for a in appointments]
+        'appointments': [{'id': a.id, 'slot_number': a.slot_number, 'patient_name': a.patient_name, 'status': a.status, 'booking_type': a.booking_type, 'time_slot': a.time_slot, 'booking_id': a.booking_id} for a in appointments]
     }
 
 
