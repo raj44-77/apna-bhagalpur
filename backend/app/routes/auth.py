@@ -105,7 +105,7 @@ def require_clinic_owner(user: dict = Depends(get_current_user), db: Session = D
 async def login(request: Request, data: LoginData, db: Session = Depends(get_db)):
     try:
         # Honeypot check - bots fill hidden fields
-        if data.website:
+        if data.website and data.website.strip():
             raise HTTPException(status_code=400, detail="Invalid request")
         
         login_value = data.email.strip().lower()
@@ -285,4 +285,3 @@ async def change_password(data: dict, db: Session = Depends(get_db)):
         return {"message": "Password changed successfully"}
     except HTTPException: raise
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
-    
