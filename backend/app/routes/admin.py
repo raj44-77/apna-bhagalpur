@@ -100,7 +100,8 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
 
 @router.get("/dashboard/{clinic_id}")
 @limiter.limit("30/minute")
-async def get_dashboard(request: Request, clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def get_dashboard(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
+    verify_ownership(owner_clinic_id, clinic_id)
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     appointments = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today).all()
@@ -145,7 +146,8 @@ async def is_queue_locked(clinic_id: int, appointment_date: str = None, db: Sess
 
 
 @router.get("/absentees/{clinic_id}")
-async def get_absentees(clinic_id: int, appointment_date: str = None, db: Session = Depends(get_db)):
+async def get_absentees(clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
+    verify_ownership(owner_clinic_id, clinic_id)
     today = appointment_date if appointment_date else str(date.today())
     absentees = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == today, Appointment.status == "absent").all()
     absentees.sort(key=lambda a: to_minutes(a.time_slot))
