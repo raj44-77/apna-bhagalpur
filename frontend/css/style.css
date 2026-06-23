@@ -620,4 +620,22 @@ select.form-control {
     word-break: break-word;
     text-align: center;
   }
+  
+  /* ===== TRACKING "YOU" BADGE ===== */
+.you-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: 8px;
+    animation: youPulse 2s ease-in-out infinite;
+    vertical-align: middle;
 }
+
+@keyframes youPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(37,99,235,0); }
+}}
