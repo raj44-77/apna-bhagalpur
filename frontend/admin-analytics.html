@@ -192,6 +192,12 @@
     <script>
         let analyticsClinicId = null;
 
+        // Helper to get auth headers
+        function getAuthHeaders() {
+            const token = localStorage.getItem('ab_token');
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+
         function initClinic() {
             const user = AuthStore.getCurrentUser();
             if (!user || user.user_type !== 'clinic') {
@@ -223,18 +229,22 @@
 
         async function loadOverview(days) {
             try {
-                const res = await fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`);
+                const res = await fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`, {
+                    headers: getAuthHeaders()
+                });
                 const data = await res.json();
-                document.getElementById('statTotal').textContent = data.total_patients;
-                document.getElementById('statCompleted').textContent = data.completion_rate + '%';
-                document.getElementById('statAbsent').textContent = data.absent_rate + '%';
-                document.getElementById('statAvgTime').textContent = data.avg_consultation_minutes + ' min';
+                document.getElementById('statTotal').textContent = data.total_patients || 0;
+                document.getElementById('statCompleted').textContent = (data.completion_rate || 0) + '%';
+                document.getElementById('statAbsent').textContent = (data.absent_rate || 0) + '%';
+                document.getElementById('statAvgTime').textContent = (data.avg_consultation_minutes || 0) + ' min';
             } catch(e) {}
         }
 
         async function loadDaily(days) {
             try {
-                const res = await fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`);
+                const res = await fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`, {
+                    headers: getAuthHeaders()
+                });
                 const data = await res.json();
                 const maxVal = Math.max(...data.map(d => d.total), 1);
                 
@@ -250,7 +260,9 @@
 
         async function loadHourly(days) {
             try {
-                const res = await fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`);
+                const res = await fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`, {
+                    headers: getAuthHeaders()
+                });
                 const data = await res.json();
                 
                 document.getElementById('hourlyChart').innerHTML = data.map(h => `
@@ -267,7 +279,9 @@
 
         async function loadDoctors(days) {
             try {
-                const res = await fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`);
+                const res = await fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`, {
+                    headers: getAuthHeaders()
+                });
                 const data = await res.json();
                 
                 document.getElementById('doctorTable').innerHTML = data.length === 0 ? 
@@ -295,7 +309,9 @@
 
         async function loadRecent() {
             try {
-                const res = await fetch(`${API_BASE}/analytics/recent/${analyticsClinicId}?limit=15`);
+                const res = await fetch(`${API_BASE}/analytics/recent/${analyticsClinicId}?limit=15`, {
+                    headers: getAuthHeaders()
+                });
                 const data = await res.json();
                 
                 document.getElementById('recentTable').innerHTML = data.length === 0 ?
@@ -320,15 +336,16 @@
             const days = getDays();
             const periodText = days === 7 ? 'Last 7 Days' : days === 14 ? 'Last 14 Days' : 'Last 30 Days';
             const clinicName = document.getElementById('analyticsClinicName').value || 'Clinic';
+            const headers = getAuthHeaders();
             
             showToast('Generating...', 'Preparing your report', 'info');
             
             try {
                 const [overview, daily, doctors, hourly] = await Promise.all([
-                    fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`).then(r => r.json()),
-                    fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`).then(r => r.json()),
-                    fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`).then(r => r.json()),
-                    fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`).then(r => r.json())
+                    fetch(`${API_BASE}/analytics/overview/${analyticsClinicId}?days=${days}`, { headers }).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/daily/${analyticsClinicId}?days=${days}`, { headers }).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/doctors/${analyticsClinicId}?days=${days}`, { headers }).then(r => r.json()),
+                    fetch(`${API_BASE}/analytics/hourly/${analyticsClinicId}?days=${days}`, { headers }).then(r => r.json())
                 ]);
                 
                 let html = `<html><head><meta charset="UTF-8"><title>${clinicName} - Analytics Report</title>
@@ -353,11 +370,11 @@
                 
                 <h2>📋 Overview</h2>
                 <div class="summary-box">
-                    <div class="summary-item"><div class="summary-value">${overview.total_patients}</div><div class="summary-label">Total Patients</div></div>
-                    <div class="summary-item"><div class="summary-value">${overview.completion_rate}%</div><div class="summary-label">Completion Rate</div></div>
-                    <div class="summary-item"><div class="summary-value">${overview.absent_rate}%</div><div class="summary-label">Absent Rate</div></div>
-                    <div class="summary-item"><div class="summary-value">${overview.avg_consultation_minutes} min</div><div class="summary-label">Avg Consultation</div></div>
-                    <div class="summary-item"><div class="summary-value">${overview.today_count}</div><div class="summary-label">Today</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.total_patients || 0}</div><div class="summary-label">Total Patients</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.completion_rate || 0}%</div><div class="summary-label">Completion Rate</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.absent_rate || 0}%</div><div class="summary-label">Absent Rate</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.avg_consultation_minutes || 0} min</div><div class="summary-label">Avg Consultation</div></div>
+                    <div class="summary-item"><div class="summary-value">${overview.today_count || 0}</div><div class="summary-label">Today</div></div>
                 </div>
                 
                 <h2>👨‍⚕️ Doctor Performance</h2>
