@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from ..database import get_db
 from ..models.appointment import Appointment
 from ..models.queue import QueueState
-from .auth import require_clinic_admin
+from .auth import require_clinic_admin, require_clinic_owner
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -29,7 +29,10 @@ async def get_queue_status(request: Request, clinic_id: int, appointment_date: s
 
 @router.post('/pause/{clinic_id}')
 @limiter.limit("10/minute")
-async def toggle_pause(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
+async def toggle_pause(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), db: Session = Depends(get_db)):
+    if owner_clinic_id is not None and owner_clinic_id != clinic_id:
+        raise HTTPException(status_code=403, detail="Access denied. This is not your clinic.")
+    
     today = date.today()
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0, is_paused=False); db.add(queue); db.flush()
