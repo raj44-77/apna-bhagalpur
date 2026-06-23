@@ -46,6 +46,11 @@
                     </div>
 
                     <form id="loginForm">
+                        <!-- Honeypot - invisible to humans, bots fill this -->
+                        <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                            <input type="text" name="website" id="honeypot" tabindex="-1" autocomplete="off">
+                        </div>
+                        
                         <div class="form-group">
                             <label class="form-label">Email or Phone *</label>
                             <input type="text" class="form-control" id="loginValue" placeholder="Enter email or 10-digit phone number" required>
@@ -151,10 +156,11 @@
             e.preventDefault();
             const loginValue = document.getElementById('loginValue').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
+            const honeypot = document.getElementById('honeypot').value;
             const isEmail = loginValue.includes('@') && loginValue.includes('.');
             const isPhone = /^\d{10}$/.test(loginValue);
             if (!isEmail && !isPhone) { showToast('Error', 'Enter a valid email or 10-digit phone number', 'error'); return; }
-            const result = await loginUser(loginValue, password);
+            const result = await loginUser(loginValue, password, honeypot);
             if (result.success) {
                 showToast('Welcome!', 'Logged in as ' + result.user.name, 'success');
                 setTimeout(() => {
