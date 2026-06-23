@@ -79,10 +79,23 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+
 def require_clinic_admin(user: dict = Depends(get_current_user)):
     if user["user_type"] not in ["clinic", "admin"]:
         raise HTTPException(status_code=403, detail="Access denied. Clinic admin only.")
     return user
+
+
+def require_clinic_owner(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Returns the clinic_id that this user owns. Super admin bypasses check."""
+    if user["user_type"] == "admin":
+        return None  # Super admin can access any clinic
+    
+    user_record = db.query(User).filter(User.id == user["user_id"]).first()
+    if not user_record or not user_record.clinic_id:
+        raise HTTPException(status_code=403, detail="No clinic associated with your account.")
+    
+    return user_record.clinic_id
 
 
 @router.post("/login")
