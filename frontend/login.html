@@ -46,11 +46,6 @@
                     </div>
 
                     <form id="loginForm">
-                        <!-- Honeypot - invisible to humans, bots and autofill fill this -->
-                        <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
-                            <input type="text" name="website" id="honeypot" tabindex="-1" autocomplete="off" value="">
-                        </div>
-                        
                         <div class="form-group">
                             <label class="form-label">Email or Phone *</label>
                             <input type="text" class="form-control" id="loginValue" placeholder="Enter email or 10-digit phone number" required>
@@ -90,12 +85,6 @@
     <script src="js/auth.js"></script>
     <script>
         const GOOGLE_CLIENT_ID = '4303679009-89qm58umrd1sqc3scrclb5ik9utc22v1.apps.googleusercontent.com';
-
-        // Clear honeypot on page load to prevent autofill blocking
-        document.addEventListener('DOMContentLoaded', function() {
-            const hp = document.getElementById('honeypot');
-            if (hp) { hp.value = ''; }
-        });
 
         if (AuthStore.isLoggedIn()) {
             const user = AuthStore.getCurrentUser();
@@ -162,11 +151,10 @@
             e.preventDefault();
             const loginValue = document.getElementById('loginValue').value.trim();
             const password = document.getElementById('loginPassword').value.trim();
-            const honeypot = document.getElementById('honeypot')?.value || '';
             const isEmail = loginValue.includes('@') && loginValue.includes('.');
             const isPhone = /^\d{10}$/.test(loginValue);
             if (!isEmail && !isPhone) { showToast('Error', 'Enter a valid email or 10-digit phone number', 'error'); return; }
-            const result = await loginUser(loginValue, password, honeypot);
+            const result = await loginUser(loginValue, password);
             if (result.success) {
                 showToast('Welcome!', 'Logged in as ' + result.user.name, 'success');
                 setTimeout(() => {

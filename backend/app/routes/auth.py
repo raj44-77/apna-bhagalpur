@@ -3,7 +3,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timedelta
-from typing import Optional
 from jose import jwt
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -27,7 +26,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 class LoginData(BaseModel):
     email: str
     password: str
-    website: Optional[str] = None  # Honeypot field
 
 
 def validate_email(email: str) -> bool:
@@ -91,7 +89,7 @@ def require_clinic_admin(user: dict = Depends(get_current_user)):
 def require_clinic_owner(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """Returns the clinic_id that this user owns. Super admin bypasses check."""
     if user["user_type"] == "admin":
-        return None  # Super admin can access any clinic
+        return None
     
     user_record = db.query(User).filter(User.id == user["user_id"]).first()
     if not user_record or not user_record.clinic_id:
@@ -104,10 +102,6 @@ def require_clinic_owner(user: dict = Depends(get_current_user), db: Session = D
 @limiter.limit("5/minute")
 async def login(request: Request, data: LoginData, db: Session = Depends(get_db)):
     try:
-        # Honeypot check - bots fill hidden fields
-        if data.website and data.website.strip():
-            raise HTTPException(status_code=400, detail="Invalid request")
-        
         login_value = data.email.strip().lower()
         if is_email(login_value):
             user = db.query(User).filter(User.email == login_value).first()

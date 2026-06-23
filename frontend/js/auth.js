@@ -27,13 +27,13 @@ const AuthStore = {
     }
 };
 
-async function loginUser(email, password, honeypot = '') {
+async function loginUser(email, password) {
     try {
         const baseUrl = typeof API_BASE !== 'undefined' ? API_BASE : 'http://localhost:8000/api';
         const res = await fetch(`${baseUrl}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, website: honeypot })
+            body: JSON.stringify({ email, password })
         });
         const result = await res.json();
         if (result.access_token) {
