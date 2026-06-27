@@ -9,11 +9,14 @@ from ..models.appointment import Appointment
 from ..models.queue import QueueState
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
+from ..models.audit_log import AuditLog
 from .websocket import broadcast
 from .auth import require_clinic_admin, require_clinic_owner
+import logging
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+logger = logging.getLogger(__name__)
 
 
 def to_minutes(time_str):
@@ -32,6 +35,22 @@ def verify_ownership(owner_clinic_id, clinic_id):
         raise HTTPException(status_code=403, detail="Access denied. This is not your clinic.")
 
 
+def log_action(db: Session, user_id: int, clinic_id: int, action: str, details: str = "", ip_address: str = ""):
+    try:
+        log = AuditLog(
+            user_id=user_id,
+            clinic_id=clinic_id,
+            action=action,
+            details=details,
+            ip_address=ip_address,
+            created_at=datetime.now()
+        )
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to log action: {e}")
+
+
 @router.post("/next-slot/{clinic_id}")
 @limiter.limit("20/minute")
 async def next_slot(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
@@ -47,6 +66,7 @@ async def next_slot(request: Request, clinic_id: int, user: dict = Depends(requi
         queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
         if queue: queue.current_slot_number = next_patient.slot_number; queue.total_patients_served += 1
         db.commit()
+        log_action(db, user["user_id"], clinic_id, "next_slot", f"Patient: {next_patient.patient_name}", request.client.host if request.client else "")
         await broadcast(clinic_id, {"action": "next_slot", "current_slot": next_patient.slot_number, "message": f"Now serving: {next_patient.patient_name} ({next_patient.time_slot})"})
         return {"message": f"Now serving {next_patient.patient_name} at {next_patient.time_slot}", "current_slot": next_patient.slot_number}
     db.commit()
@@ -64,6 +84,7 @@ async def mark_absent(request: Request, clinic_id: int, user: dict = Depends(req
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if queue: queue.total_absent += 1
     db.commit()
+    log_action(db, user["user_id"], clinic_id, "mark_absent", f"Patient: {current.patient_name}", request.client.host if request.client else "")
     await broadcast(clinic_id, {"action": "mark_absent", "slot": current.slot_number, "message": f"Marked absent: {current.patient_name}"})
     return await next_slot(request, clinic_id, appointment_date, db)
 
@@ -92,6 +113,7 @@ async def add_walkin(request: Request, clinic_id: int, doctor_id: int, patient_n
         if not queue: queue = QueueState(clinic_id=clinic_id, doctor_id=doctor_id, appointment_date=today, current_slot_number=0); db.add(queue); db.flush()
         queue.total_walkins += 1
         db.commit(); db.refresh(appointment)
+        log_action(db, user["user_id"], clinic_id, "add_walkin", f"Patient: {patient_name}", request.client.host if request.client else "")
         await broadcast(clinic_id, {"action": "add_walkin", "slot": appointment.slot_number, "patient": patient_name, "message": f"Walk-in: {patient_name}"})
         return {"id": appointment.id, "slot_number": appointment.slot_number, "patient_name": appointment.patient_name, "status": appointment.status}
     except Exception as e: db.rollback(); raise HTTPException(status_code=500, detail=str(e))
@@ -118,22 +140,24 @@ async def get_dashboard(request: Request, clinic_id: int, user: dict = Depends(r
 
 
 @router.post("/lock/{clinic_id}")
-async def lock_queue(clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
+async def lock_queue(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
     verify_ownership(owner_clinic_id, clinic_id)
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if not queue: queue = QueueState(clinic_id=clinic_id, appointment_date=today, current_slot_number=0, is_locked=True); db.add(queue)
     else: queue.is_locked = True
     db.commit()
+    log_action(db, user["user_id"], clinic_id, "lock_queue", f"Date: {today}", request.client.host if request.client else "")
     return {"message": f"Queue locked for {today}", "is_locked": True}
 
 
 @router.post("/unlock/{clinic_id}")
-async def unlock_queue(clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
+async def unlock_queue(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), appointment_date: str = None, db: Session = Depends(get_db)):
     verify_ownership(owner_clinic_id, clinic_id)
     today = appointment_date if appointment_date else str(date.today())
     queue = db.query(QueueState).filter(QueueState.clinic_id == clinic_id, QueueState.appointment_date == today).first()
     if queue: queue.is_locked = False; db.commit()
+    log_action(db, user["user_id"], clinic_id, "unlock_queue", f"Date: {today}", request.client.host if request.client else "")
     return {"message": f"Queue unlocked for {today}", "is_locked": False}
 
 
@@ -154,32 +178,35 @@ async def get_absentees(clinic_id: int, user: dict = Depends(require_clinic_admi
 
 
 @router.post("/start-treatment/{appointment_id}")
-async def start_treatment(appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
+async def start_treatment(request: Request, appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
     max_slot = db.query(func.max(Appointment.slot_number)).filter(Appointment.clinic_id == appointment.clinic_id, Appointment.appointment_date == appointment.appointment_date).scalar() or 0
     appointment.status = "waiting"; appointment.slot_number = max_slot + 1
     db.commit()
+    log_action(db, user["user_id"], appointment.clinic_id, "start_treatment", f"Patient: {appointment.patient_name}", request.client.host if request.client else "")
     return {"message": f"{appointment.patient_name} added back to queue", "new_slot": appointment.slot_number}
 
 
 @router.post("/reschedule/{appointment_id}")
-async def reschedule_appointment(appointment_id: int, new_date: str, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
+async def reschedule_appointment(request: Request, appointment_id: int, new_date: str, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Not found")
     if appointment.status != "absent": raise HTTPException(status_code=400, detail="Patient is not absent")
     max_slot = db.query(func.max(Appointment.slot_number)).filter(Appointment.clinic_id == appointment.clinic_id, Appointment.appointment_date == new_date).scalar() or 0
     appointment.appointment_date = new_date; appointment.status = "waiting"; appointment.slot_number = max_slot + 1
     db.commit()
+    log_action(db, user["user_id"], appointment.clinic_id, "reschedule", f"Patient: {appointment.patient_name}, New date: {new_date}", request.client.host if request.client else "")
     return {"message": f"Rescheduled to {new_date}", "new_slot": appointment.slot_number}
 
 
 @router.delete("/delete-appointment/{appointment_id}")
-async def delete_appointment(appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
+async def delete_appointment(request: Request, appointment_id: int, user: dict = Depends(require_clinic_admin), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment: raise HTTPException(status_code=404, detail="Appointment not found")
     clinic_id = appointment.clinic_id
+    patient_name = appointment.patient_name
     appointment_date = appointment.appointment_date
     db.delete(appointment); db.commit()
     remaining = db.query(Appointment).filter(Appointment.clinic_id == clinic_id, Appointment.appointment_date == appointment_date).order_by(Appointment.time_slot, Appointment.id).all()
@@ -190,11 +217,12 @@ async def delete_appointment(appointment_id: int, user: dict = Depends(require_c
         if not current_exists and remaining: remaining[0].status = "current"; queue.current_slot_number = remaining[0].slot_number
         elif not remaining: queue.current_slot_number = 0
     db.commit()
+    log_action(db, user["user_id"], clinic_id, "delete_booking", f"Patient: {patient_name}, Booking: {appointment_id}", request.client.host if request.client else "")
     return {"message": "Appointment deleted and queue reordered"}
 
 
 @router.post("/undo-last-action/{clinic_id}")
-async def undo_last_action(clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), db: Session = Depends(get_db)):
+async def undo_last_action(request: Request, clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), db: Session = Depends(get_db)):
     verify_ownership(owner_clinic_id, clinic_id)
     
     today = str(date.today())
@@ -228,6 +256,7 @@ async def undo_last_action(clinic_id: int, user: dict = Depends(require_clinic_a
         queue.current_slot_number = last_action.slot_number
     
     db.commit()
+    log_action(db, user["user_id"], clinic_id, "undo", f"Restored: {last_action.patient_name}", request.client.host if request.client else "")
     
     return {
         "message": f"Undone: {last_action.patient_name} restored to current",

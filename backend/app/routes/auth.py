@@ -6,15 +6,17 @@ from datetime import datetime, timedelta
 from jose import jwt
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import bcrypt, re, random, json
+import bcrypt, re, random, json, logging
 from ..database import get_db
 from ..models.user import User
 from ..models.clinic import Clinic
 from ..models.verification_code import VerificationCode
+from ..models.audit_log import AuditLog
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
 
 from ..config import get_settings
 settings = get_settings()
@@ -67,6 +69,22 @@ def create_access_token(user_id: int, user_type: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def log_action(db: Session, user_id: int, clinic_id: int, action: str, details: str = "", ip_address: str = ""):
+    try:
+        log = AuditLog(
+            user_id=user_id,
+            clinic_id=clinic_id,
+            action=action,
+            details=details,
+            ip_address=ip_address,
+            created_at=datetime.now()
+        )
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to log action: {e}")
+
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     token = credentials.credentials
     try:
@@ -87,7 +105,6 @@ def require_clinic_admin(user: dict = Depends(get_current_user)):
 
 
 def require_clinic_owner(user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Returns the clinic_id that this user owns. Super admin bypasses check."""
     if user["user_type"] == "admin":
         return None
     
@@ -108,14 +125,21 @@ async def login(request: Request, data: LoginData, db: Session = Depends(get_db)
         elif is_phone(login_value):
             user = db.query(User).filter(User.phone == login_value).first()
         else:
+            log_action(db, None, None, "login_failed", f"Invalid format: {login_value}", request.client.host if request.client else "")
             raise HTTPException(status_code=400, detail="Enter a valid email or 10-digit phone number")
+        
         if not user or not verify_password(data.password, user.password):
+            log_action(db, user.id if user else None, user.clinic_id if user else None, "login_failed", f"Attempt: {login_value}", request.client.host if request.client else "")
             raise HTTPException(status_code=401, detail="Invalid credentials")
+        
         clinic_name = None
         if user.clinic_id:
             clinic = db.query(Clinic).filter(Clinic.id == user.clinic_id).first()
             if clinic: clinic_name = clinic.name
+        
         access_token = create_access_token(user.id, user.user_type)
+        log_action(db, user.id, user.clinic_id, "login_success", f"User: {user.email}", request.client.host if request.client else "")
+        
         return {
             "access_token": access_token, "token_type": "bearer",
             "user": {"id": user.id, "name": user.name, "email": user.email, "phone": user.phone, "user_type": user.user_type, "clinic_id": user.clinic_id, "clinic_name": clinic_name, "age": user.age, "gender": user.gender, "is_active": bool(user.is_active), "created_at": str(user.created_at)}
@@ -136,6 +160,7 @@ async def google_login(request: Request, data: dict, db: Session = Depends(get_d
             user = User(name=name, email=email, phone=f"gg{google_id[:8]}", password=hash_password(google_id), user_type="patient")
             db.add(user); db.commit(); db.refresh(user)
         access_token = create_access_token(user.id, user.user_type)
+        log_action(db, user.id, user.clinic_id, "google_login", f"User: {user.email}", request.client.host if request.client else "")
         return {"access_token": access_token, "token_type": "bearer", "user": {"id": user.id, "name": user.name, "email": user.email, "phone": user.phone, "user_type": user.user_type, "clinic_id": user.clinic_id, "clinic_name": None, "age": user.age, "gender": user.gender, "is_active": bool(user.is_active), "created_at": str(user.created_at)}}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
@@ -219,13 +244,14 @@ async def forgot_password(request: Request, data: dict, db: Session = Depends(ge
         db.query(VerificationCode).filter(VerificationCode.email == email, VerificationCode.code_type == "password_reset").delete()
         vcode = VerificationCode(email=email, code=reset_code, code_type="password_reset", user_data=str(user.id), expires_at=datetime.utcnow() + timedelta(minutes=10))
         db.add(vcode); db.commit()
+        log_action(db, user.id, user.clinic_id, "password_reset_requested", f"Email: {email}", request.client.host if request.client else "")
         return {"message": "Reset code generated", "reset_code": reset_code, "email": email}
     except HTTPException: raise
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/reset-password")
-async def reset_password(data: dict, db: Session = Depends(get_db)):
+async def reset_password(request: Request, data: dict, db: Session = Depends(get_db)):
     try:
         email = data.get("email", "").strip().lower()
         code = data.get("code", "").strip()
@@ -238,6 +264,7 @@ async def reset_password(data: dict, db: Session = Depends(get_db)):
         if not user: raise HTTPException(status_code=404, detail="User not found")
         user.password = hash_password(new_password)
         db.delete(vcode); db.commit()
+        log_action(db, user.id, user.clinic_id, "password_reset_complete", f"Email: {email}", request.client.host if request.client else "")
         return {"message": "Password reset successful"}
     except HTTPException: raise
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
@@ -267,7 +294,7 @@ async def update_profile(data: dict, db: Session = Depends(get_db)):
 
 
 @router.put("/change-password")
-async def change_password(data: dict, db: Session = Depends(get_db)):
+async def change_password(request: Request, data: dict, db: Session = Depends(get_db)):
     try:
         user_id = data.get("user_id"); cp = data.get("current_password"); np = data.get("new_password")
         if not user_id: raise HTTPException(status_code=400, detail="User ID required")
@@ -276,6 +303,7 @@ async def change_password(data: dict, db: Session = Depends(get_db)):
         if not verify_password(cp, user.password): raise HTTPException(status_code=400, detail="Current password incorrect")
         if not validate_password(np): raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
         user.password = hash_password(np); db.commit()
+        log_action(db, user.id, user.clinic_id, "password_changed", f"User: {user.email}", request.client.host if request.client else "")
         return {"message": "Password changed successfully"}
     except HTTPException: raise
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
