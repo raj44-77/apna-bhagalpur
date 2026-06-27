@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, case
 from datetime import date, datetime, timedelta
 from ..database import get_db
 from ..models.appointment import Appointment
@@ -16,44 +16,31 @@ async def get_overview(clinic_id: int, days: int = 7, user: dict = Depends(requi
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
-    total = db.query(Appointment).filter(
+    # SINGLE QUERY with conditional aggregation
+    stats = db.query(
+        func.count(Appointment.id).label('total'),
+        func.sum(case((Appointment.status == 'completed', 1), else_=0)).label('completed'),
+        func.sum(case((Appointment.status == 'absent', 1), else_=0)).label('absent'),
+        func.sum(case((Appointment.status == 'waiting', 1), else_=0)).label('waiting'),
+        func.avg(
+            case((Appointment.actual_consultation_time > 0, Appointment.actual_consultation_time), else_=None)
+        ).label('avg_time')
+    ).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date >= start_date,
         Appointment.appointment_date <= today
-    ).count()
-    
-    completed = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date >= start_date,
-        Appointment.appointment_date <= today,
-        Appointment.status == "completed"
-    ).count()
-    
-    absent = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date >= start_date,
-        Appointment.appointment_date <= today,
-        Appointment.status == "absent"
-    ).count()
-    
-    waiting = db.query(Appointment).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date >= start_date,
-        Appointment.appointment_date <= today,
-        Appointment.status == "waiting"
-    ).count()
+    ).first()
     
     today_count = db.query(Appointment).filter(
         Appointment.clinic_id == clinic_id,
         Appointment.appointment_date == today
     ).count()
     
-    avg_time = db.query(func.avg(Appointment.actual_consultation_time)).filter(
-        Appointment.clinic_id == clinic_id,
-        Appointment.appointment_date >= start_date,
-        Appointment.appointment_date <= today,
-        Appointment.actual_consultation_time > 0
-    ).scalar() or 0
+    total = stats.total or 0
+    completed = stats.completed or 0
+    absent = stats.absent or 0
+    waiting = stats.waiting or 0
+    avg_time = float(stats.avg_time) if stats.avg_time else 0
     
     return {
         "period": f"Last {days} days",
@@ -65,7 +52,7 @@ async def get_overview(clinic_id: int, days: int = 7, user: dict = Depends(requi
         "waiting": waiting,
         "absent_rate": round((absent / total * 100), 1) if total > 0 else 0,
         "today_count": today_count,
-        "avg_consultation_minutes": round(float(avg_time), 1),
+        "avg_consultation_minutes": round(avg_time, 1),
         "completion_rate": round((completed / total * 100), 1) if total > 0 else 0
     }
 
@@ -75,25 +62,29 @@ async def get_daily_stats(clinic_id: int, days: int = 7, user: dict = Depends(re
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
+    # SINGLE QUERY with GROUP BY date
+    daily_stats = db.query(
+        Appointment.appointment_date,
+        func.count(Appointment.id).label('total'),
+        func.sum(case((Appointment.status == 'completed', 1), else_=0)).label('completed')
+    ).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date >= start_date,
+        Appointment.appointment_date <= today
+    ).group_by(Appointment.appointment_date).order_by(Appointment.appointment_date).all()
+    
+    # Build lookup
+    stats_map = {str(s.appointment_date): s for s in daily_stats}
+    
     daily_data = []
     current_date = start_date
     while current_date <= today:
-        day_total = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic_id,
-            Appointment.appointment_date == current_date
-        ).count()
-        
-        day_completed = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic_id,
-            Appointment.appointment_date == current_date,
-            Appointment.status == "completed"
-        ).count()
-        
+        s = stats_map.get(str(current_date))
         daily_data.append({
             "date": str(current_date),
             "day_name": current_date.strftime("%a"),
-            "total": day_total,
-            "completed": day_completed
+            "total": s.total if s else 0,
+            "completed": s.completed if s else 0
         })
         current_date += timedelta(days=1)
     
@@ -105,32 +96,32 @@ async def get_doctor_stats(clinic_id: int, days: int = 7, user: dict = Depends(r
     today = date.today()
     start_date = today - timedelta(days=days - 1)
     
+    # SINGLE QUERY with GROUP BY doctor instead of N+1 loop
+    stats = db.query(
+        Appointment.doctor_id,
+        func.count(Appointment.id).label('total'),
+        func.sum(case((Appointment.status == 'completed', 1), else_=0)).label('completed'),
+        func.avg(
+            case((Appointment.actual_consultation_time > 0, Appointment.actual_consultation_time), else_=None)
+        ).label('avg_time')
+    ).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date >= start_date,
+        Appointment.appointment_date <= today
+    ).group_by(Appointment.doctor_id).all()
+    
+    # Build lookup
+    stats_map = {s.doctor_id: s for s in stats}
+    
+    # Get doctors for this clinic
     doctors = db.query(Doctor).filter(Doctor.clinic_id == clinic_id).all()
     
     doctor_stats = []
     for doc in doctors:
-        total = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic_id,
-            Appointment.doctor_id == doc.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today
-        ).count()
-        
-        completed = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic_id,
-            Appointment.doctor_id == doc.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today,
-            Appointment.status == "completed"
-        ).count()
-        
-        avg_time = db.query(func.avg(Appointment.actual_consultation_time)).filter(
-            Appointment.clinic_id == clinic_id,
-            Appointment.doctor_id == doc.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today,
-            Appointment.actual_consultation_time > 0
-        ).scalar() or 0
+        s = stats_map.get(doc.id)
+        total = s.total if s else 0
+        completed = s.completed if s else 0
+        avg_time = float(s.avg_time) if s and s.avg_time else 0
         
         doctor_stats.append({
             "id": doc.id,
@@ -138,7 +129,7 @@ async def get_doctor_stats(clinic_id: int, days: int = 7, user: dict = Depends(r
             "specialty": doc.specialty,
             "total_patients": total,
             "completed": completed,
-            "avg_consultation_minutes": round(float(avg_time), 1),
+            "avg_consultation_minutes": round(avg_time, 1),
             "completion_rate": round((completed / total * 100), 1) if total > 0 else 0
         })
     
