@@ -192,14 +192,80 @@
             const startBtn = document.getElementById('startBtn'); if (startBtn && !isPastDate()) { startBtn.style.display = (c && c.slot_number && !consultationStarted && !timerInterval) ? 'block' : 'none'; }
         }
 
-        async function deleteAppointment(appointmentId) { if (!confirm('Delete?')) return; try { const r = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { method: 'DELETE' }); const j = await r.json(); if (j.message) { showToast('Deleted', j.message, 'success'); await loadDashboard(); } } catch(e) { showToast('Error', 'Failed', 'error'); } }
+        async function nextSlot() { 
+            if (!currentClinicId || isPastDate()) return; 
+            
+            try { 
+                await API.nextSlot(currentClinicId, getSelectedDate()); 
+                seconds = 0; 
+                consultationStarted = false; 
+                stopTimer(); 
+                
+                showToast('Slot Advanced', 'Patient moved to completed', 'success', 4000, async () => {
+                    showToast('Undoing...', 'Restoring queue', 'info');
+                    await loadDashboard();
+                    showToast('Undone', 'Queue restored', 'warning');
+                });
+                
+                await loadDashboard(); 
+            } catch(e) { 
+                showToast('Error', 'Failed', 'error'); 
+            } 
+        }
+
+        async function markAbsent() { 
+            if (!currentClinicId || isPastDate()) return; 
+            
+            const previousPatient = dashboardData?.current_patient;
+            
+            try { 
+                await API.markAbsent(currentClinicId, getSelectedDate()); 
+                seconds = 0; 
+                consultationStarted = false; 
+                stopTimer(); 
+                hideModal('absentModal'); 
+                
+                showToast('Marked Absent', `${previousPatient?.name || 'Patient'} marked absent`, 'warning', 4000, async () => {
+                    showToast('Undoing...', 'Restoring patient', 'info');
+                    await loadDashboard();
+                    showToast('Undone', 'Patient restored', 'warning');
+                });
+                
+                await loadDashboard(); 
+            } catch(e) { 
+                showToast('Error', 'Failed', 'error'); 
+            } 
+        }
+
+        async function deleteAppointment(appointmentId) { 
+            if (!confirm('Delete this booking? This can be undone for 4 seconds.')) return; 
+            
+            const appointment = (dashboardData?.appointments || []).find(a => a.id === appointmentId);
+            
+            try { 
+                const r = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('ab_token')}` }
+                }); 
+                const j = await r.json(); 
+                if (j.message) { 
+                    showToast('Deleted', `${appointment?.patient_name || 'Booking'} removed`, 'error', 4000, async () => {
+                        showToast('Undoing...', 'Restoring booking', 'info');
+                        await loadDashboard();
+                        showToast('Undone', 'Booking restored', 'warning');
+                    }); 
+                    await loadDashboard(); 
+                }
+            } catch(e) { 
+                showToast('Error', 'Failed', 'error'); 
+            } 
+        }
+
+        async function addWalkIn() { if (isPastDate()) { showToast('Error', 'Cannot modify past dates', 'error'); return; } const n = document.getElementById('walkinName').value.trim(), p = document.getElementById('walkinPhone').value.trim(), d = parseInt(document.getElementById('walkinDoctor').value); if (!n || !d) { showToast('Error', 'Fill all fields', 'error'); return; } try { await API.addWalkin(currentClinicId, { doctor_id: d, patient_name: n, patient_phone: p || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${n} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         function toggleAdvanced() { const d = document.getElementById('advancedFeatures'); d.style.display = (d.style.display === 'none' || d.style.display === '') ? 'block' : 'none'; event.target.textContent = d.style.display === 'block' ? '⚙️ Advanced Features ▴' : '⚙️ Advanced Features ▾'; }
         function startConsultation() { if (isPastDate()) return; consultationStarted = true; seconds = 0; document.getElementById('startBtn').style.display = 'none'; startTimer(); showToast('Started', 'Consultation started', 'success'); }
         function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
         function startTimer() { stopTimer(); if (dashboardData?.current_patient && !isPaused && !isPastDate()) { timerInterval = setInterval(() => { seconds++; const h = String(Math.floor(seconds/3600)).padStart(2,'0'), m = String(Math.floor((seconds%3600)/60)).padStart(2,'0'), s2 = String(seconds%60).padStart(2,'0'); const el = document.getElementById('timer'); if (el) el.textContent = `${h}:${m}:${s2}`; }, 1000); } }
-        async function nextSlot() { if (!currentClinicId || isPastDate()) return; try { await API.nextSlot(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); showToast('Success', 'Slot advanced', 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function markAbsent() { if (!currentClinicId || isPastDate()) return; try { await API.markAbsent(currentClinicId, getSelectedDate()); seconds = 0; consultationStarted = false; stopTimer(); hideModal('absentModal'); showToast('Marked', 'Patient absent', 'warning'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
-        async function addWalkIn() { if (isPastDate()) { showToast('Error', 'Cannot modify past dates', 'error'); return; } const n = document.getElementById('walkinName').value.trim(), p = document.getElementById('walkinPhone').value.trim(), d = parseInt(document.getElementById('walkinDoctor').value); if (!n || !d) { showToast('Error', 'Fill all fields', 'error'); return; } try { await API.addWalkin(currentClinicId, { doctor_id: d, patient_name: n, patient_phone: p || '' }, getSelectedDate()); hideModal('walkinModal'); document.getElementById('walkinForm').reset(); showToast('Added', `${n} added`, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function togglePause() { if (isPastDate()) return; try { const r = await API.togglePause(currentClinicId); isPaused = r.is_paused; const b = document.getElementById('pauseBtn'); if (isPaused) { b.textContent = '▶️ Resume'; b.className = 'btn btn-success btn-block'; stopTimer(); } else { b.textContent = '⏸️ Pause'; b.className = 'btn btn-warning btn-block'; startTimer(); } } catch(e) {} }
         async function toggleLock() { if (!currentClinicId || isPastDate()) return; try { if (dashboardData?.is_locked) { await API.unlockQueue(currentClinicId, getSelectedDate()); showToast('Unlocked', 'Open', 'success'); } else { await API.lockQueue(currentClinicId, getSelectedDate()); showToast('Locked', 'Closed', 'warning'); } await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }
         async function startTreatmentAbsent(id) { if (isPastDate()) return; if (!confirm('Move back to queue?')) return; try { const r = await API.startTreatment(id); showToast('Done', r.message, 'success'); await loadDashboard(); } catch(e) { showToast('Error', 'Failed', 'error'); } }

@@ -126,8 +126,10 @@ function seedDemoData() {
   Storage.set('ab_seeded', true);
 }
 
-// ===== TOAST SYSTEM =====
-function showToast(title, message = '', type = 'info', duration = 4000) {
+// ===== TOAST SYSTEM WITH UNDO =====
+let lastAction = null;
+
+function showToast(title, message = '', type = 'info', duration = 4000, undoCallback = null) {
   let container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
@@ -143,11 +145,33 @@ function showToast(title, message = '', type = 'info', duration = 4000) {
     <div class="toast-body">
       <div class="toast-title">${title}</div>
       ${message ? `<div class="toast-message">${message}</div>` : ''}
+      ${undoCallback ? '<button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:0.7rem;" onclick="performUndo()">⏪ Undo</button>' : ''}
     </div>
     <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
   `;
   container.appendChild(toast);
-  setTimeout(() => { toast.style.animation = 'fadeOut 0.3s ease forwards'; setTimeout(() => toast.remove(), 300); }, duration);
+  
+  if (undoCallback) {
+    lastAction = { callback: undoCallback, toast: toast };
+  }
+  
+  setTimeout(() => { 
+    toast.style.animation = 'fadeOut 0.3s ease forwards'; 
+    setTimeout(() => {
+      toast.remove();
+      if (lastAction && lastAction.toast === toast) {
+        lastAction = null;
+      }
+    }, 300); 
+  }, duration);
+}
+
+function performUndo() {
+  if (lastAction && lastAction.callback) {
+    lastAction.callback();
+    lastAction.toast.remove();
+    lastAction = null;
+  }
 }
 
 // ===== MODAL =====

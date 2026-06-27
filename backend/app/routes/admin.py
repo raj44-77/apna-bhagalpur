@@ -28,7 +28,6 @@ def to_minutes(time_str):
 
 
 def verify_ownership(owner_clinic_id, clinic_id):
-    """Super admin has owner_clinic_id=None, can access all. Others must match."""
     if owner_clinic_id is not None and owner_clinic_id != clinic_id:
         raise HTTPException(status_code=403, detail="Access denied. This is not your clinic.")
 
@@ -192,3 +191,45 @@ async def delete_appointment(appointment_id: int, user: dict = Depends(require_c
         elif not remaining: queue.current_slot_number = 0
     db.commit()
     return {"message": "Appointment deleted and queue reordered"}
+
+
+@router.post("/undo-last-action/{clinic_id}")
+async def undo_last_action(clinic_id: int, user: dict = Depends(require_clinic_admin), owner_clinic_id: int = Depends(require_clinic_owner), db: Session = Depends(get_db)):
+    verify_ownership(owner_clinic_id, clinic_id)
+    
+    today = str(date.today())
+    
+    last_action = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date == today,
+        Appointment.status.in_(["completed", "absent"])
+    ).order_by(Appointment.updated_at.desc()).first()
+    
+    if not last_action:
+        raise HTTPException(status_code=404, detail="No recent action to undo")
+    
+    current = db.query(Appointment).filter(
+        Appointment.clinic_id == clinic_id,
+        Appointment.appointment_date == today,
+        Appointment.status == "current"
+    ).first()
+    
+    if current:
+        current.status = "waiting"
+    
+    last_action.status = "current"
+    
+    queue = db.query(QueueState).filter(
+        QueueState.clinic_id == clinic_id,
+        QueueState.appointment_date == today
+    ).first()
+    
+    if queue:
+        queue.current_slot_number = last_action.slot_number
+    
+    db.commit()
+    
+    return {
+        "message": f"Undone: {last_action.patient_name} restored to current",
+        "patient_name": last_action.patient_name
+    }
