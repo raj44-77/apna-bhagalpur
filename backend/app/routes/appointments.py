@@ -65,7 +65,7 @@ def is_past_slot(appointment_date: str, time_slot: str) -> bool:
 
 
 @router.post("/book")
-@limiter.limit("10/minute")
+@limiter.limit("1000/minute")
 async def book_appointment(request: Request, data: BookingData, db: Session = Depends(get_db)):
     try:
         clinic = db.query(Clinic).filter(Clinic.id == data.clinic_id).first()
