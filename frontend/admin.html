@@ -80,6 +80,7 @@
                             <button class="btn btn-danger btn-block action-btn" onclick="showModal('absentModal')" style="margin-bottom:12px;">❌ Mark Absent</button>
                             <button class="btn btn-success btn-block action-btn" onclick="showModal('walkinModal')" style="margin-bottom:12px;">🚶 Add Walk-in</button>
                             <button class="btn btn-warning btn-block action-btn" id="pauseBtn" onclick="togglePause()">⏸️ Pause</button>
+                            <button class="btn btn-outline btn-block action-btn" id="undoBtn" onclick="undoLastAction()" style="margin-top:12px;margin-bottom:12px;">⏪ Undo Last Action</button>
                             <button class="btn btn-outline btn-block" onclick="toggleAdvanced()" style="margin-top:12px;">⚙️ Advanced Features ▾</button>
                             <div id="advancedFeatures" style="display:none;">
                                 <button class="btn btn-outline btn-block action-btn" id="lockBtn" onclick="toggleLock()" style="margin-top:12px;">🔒 Lock Queue</button>
@@ -192,21 +193,45 @@
             const startBtn = document.getElementById('startBtn'); if (startBtn && !isPastDate()) { startBtn.style.display = (c && c.slot_number && !consultationStarted && !timerInterval) ? 'block' : 'none'; }
         }
 
+        // ===== UNDO LAST ACTION =====
+        async function undoLastAction() {
+            if (!currentClinicId || isPastDate()) {
+                showToast('Cannot Undo', 'Past dates cannot be modified', 'warning');
+                return;
+            }
+            
+            if (!confirm('Undo the last action? This will restore the previous patient back to current.')) return;
+            
+            try {
+                const token = localStorage.getItem('ab_token');
+                const res = await fetch(`${API_BASE}/admin/undo-last-action/${currentClinicId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await res.json();
+                
+                if (result.message) {
+                    showToast('Undone!', result.patient_name + ' restored', 'warning');
+                    seconds = 0;
+                    consultationStarted = false;
+                    stopTimer();
+                    await loadDashboard();
+                } else {
+                    showToast('Nothing to Undo', result.detail || 'No recent action found', 'info');
+                }
+            } catch(e) {
+                showToast('Error', 'Failed to undo', 'error');
+            }
+        }
+
         async function nextSlot() { 
             if (!currentClinicId || isPastDate()) return; 
-            
             try { 
                 await API.nextSlot(currentClinicId, getSelectedDate()); 
                 seconds = 0; 
                 consultationStarted = false; 
                 stopTimer(); 
-                
-                showToast('Slot Advanced', 'Patient moved to completed', 'success', 4000, async () => {
-                    showToast('Undoing...', 'Restoring queue', 'info');
-                    await loadDashboard();
-                    showToast('Undone', 'Queue restored', 'warning');
-                });
-                
+                showToast('Slot Advanced', 'Patient moved to completed', 'success');
                 await loadDashboard(); 
             } catch(e) { 
                 showToast('Error', 'Failed', 'error'); 
@@ -215,22 +240,13 @@
 
         async function markAbsent() { 
             if (!currentClinicId || isPastDate()) return; 
-            
-            const previousPatient = dashboardData?.current_patient;
-            
             try { 
                 await API.markAbsent(currentClinicId, getSelectedDate()); 
                 seconds = 0; 
                 consultationStarted = false; 
                 stopTimer(); 
                 hideModal('absentModal'); 
-                
-                showToast('Marked Absent', `${previousPatient?.name || 'Patient'} marked absent`, 'warning', 4000, async () => {
-                    showToast('Undoing...', 'Restoring patient', 'info');
-                    await loadDashboard();
-                    showToast('Undone', 'Patient restored', 'warning');
-                });
-                
+                showToast('Marked Absent', 'Patient marked absent', 'warning');
                 await loadDashboard(); 
             } catch(e) { 
                 showToast('Error', 'Failed', 'error'); 
@@ -238,22 +254,16 @@
         }
 
         async function deleteAppointment(appointmentId) { 
-            if (!confirm('Delete this booking? This can be undone for 4 seconds.')) return; 
-            
-            const appointment = (dashboardData?.appointments || []).find(a => a.id === appointmentId);
-            
+            if (!confirm('Delete this booking?')) return; 
             try { 
+                const token = localStorage.getItem('ab_token');
                 const r = await fetch(`${API_BASE}/admin/delete-appointment/${appointmentId}`, { 
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('ab_token')}` }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 }); 
                 const j = await r.json(); 
                 if (j.message) { 
-                    showToast('Deleted', `${appointment?.patient_name || 'Booking'} removed`, 'error', 4000, async () => {
-                        showToast('Undoing...', 'Restoring booking', 'info');
-                        await loadDashboard();
-                        showToast('Undone', 'Booking restored', 'warning');
-                    }); 
+                    showToast('Deleted', 'Booking removed', 'error'); 
                     await loadDashboard(); 
                 }
             } catch(e) { 
