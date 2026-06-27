@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
 from datetime import date, timedelta
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -67,37 +67,32 @@ async def get_clinic_performance(request: Request, db: Session = Depends(get_db)
     today = date.today()
     start_date = today - timedelta(days=29)
     
+    # SINGLE QUERY with GROUP BY instead of N+1 loop
+    # Uses conditional aggregation to count each status in one go
+    stats = db.query(
+        Appointment.clinic_id,
+        func.count(Appointment.id).label('total'),
+        func.sum(case((Appointment.status == 'completed', 1), else_=0)).label('completed'),
+        func.sum(case((Appointment.status == 'absent', 1), else_=0)).label('absent'),
+        func.sum(case((Appointment.status == 'waiting', 1), else_=0)).label('waiting')
+    ).filter(
+        Appointment.appointment_date >= start_date,
+        Appointment.appointment_date <= today
+    ).group_by(Appointment.clinic_id).all()
+    
+    # Build lookup dict for fast access
+    stats_map = {s.clinic_id: s for s in stats}
+    
+    # Get all clinics
     clinics = db.query(Clinic).all()
     performance = []
     
     for clinic in clinics:
-        total = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today
-        ).count()
-        
-        completed = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today,
-            Appointment.status == "completed"
-        ).count()
-        
-        absent = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today,
-            Appointment.status == "absent"
-        ).count()
-        
-        waiting = db.query(Appointment).filter(
-            Appointment.clinic_id == clinic.id,
-            Appointment.appointment_date >= start_date,
-            Appointment.appointment_date <= today,
-            Appointment.status == "waiting"
-        ).count()
-        
+        s = stats_map.get(clinic.id)
+        total = s.total if s else 0
+        completed = s.completed if s else 0
+        absent = s.absent if s else 0
+        waiting = s.waiting if s else 0
         rate = round((completed / total * 100), 1) if total > 0 else 0
         
         performance.append({
@@ -120,29 +115,30 @@ async def get_daily_stats(request: Request, db: Session = Depends(get_db), _: bo
     today = date.today()
     start_date = today - timedelta(days=29)
     
+    # SINGLE QUERY with GROUP BY instead of daily loop
+    daily_stats = db.query(
+        Appointment.appointment_date,
+        func.count(Appointment.id).label('total'),
+        func.sum(case((Appointment.status == 'completed', 1), else_=0)).label('completed'),
+        func.sum(case((Appointment.status == 'absent', 1), else_=0)).label('absent')
+    ).filter(
+        Appointment.appointment_date >= start_date,
+        Appointment.appointment_date <= today
+    ).group_by(Appointment.appointment_date).order_by(Appointment.appointment_date).all()
+    
+    # Build lookup
+    stats_map = {str(s.appointment_date): s for s in daily_stats}
+    
     daily = []
     current = start_date
     while current <= today:
-        total = db.query(Appointment).filter(
-            Appointment.appointment_date == current
-        ).count()
-        
-        completed = db.query(Appointment).filter(
-            Appointment.appointment_date == current,
-            Appointment.status == "completed"
-        ).count()
-        
-        absent = db.query(Appointment).filter(
-            Appointment.appointment_date == current,
-            Appointment.status == "absent"
-        ).count()
-        
+        s = stats_map.get(str(current))
         daily.append({
             "date": str(current),
             "day": current.strftime("%a"),
-            "total": total,
-            "completed": completed,
-            "absent": absent
+            "total": s.total if s else 0,
+            "completed": s.completed if s else 0,
+            "absent": s.absent if s else 0
         })
         current += timedelta(days=1)
     
