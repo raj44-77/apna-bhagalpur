@@ -9,8 +9,8 @@ from ..models.appointment import Appointment
 from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from ..models.user import User
-import os
 from ..models.audit_log import AuditLog
+import os
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -89,9 +89,8 @@ async def get_audit_logs(
         "action": log.action,
         "details": log.details,
         "ip_address": log.ip_address,
-        "created_at": str(log.created_at)
+        "created_at": str(log.created_at + timedelta(hours=5, minutes=30)) if log.created_at else None
     } for log in logs]
-
 
 
 @router.get("/clinic-performance")
@@ -100,8 +99,6 @@ async def get_clinic_performance(request: Request, db: Session = Depends(get_db)
     today = date.today()
     start_date = today - timedelta(days=29)
     
-    # SINGLE QUERY with GROUP BY instead of N+1 loop
-    # Uses conditional aggregation to count each status in one go
     stats = db.query(
         Appointment.clinic_id,
         func.count(Appointment.id).label('total'),
@@ -113,10 +110,8 @@ async def get_clinic_performance(request: Request, db: Session = Depends(get_db)
         Appointment.appointment_date <= today
     ).group_by(Appointment.clinic_id).all()
     
-    # Build lookup dict for fast access
     stats_map = {s.clinic_id: s for s in stats}
     
-    # Get all clinics
     clinics = db.query(Clinic).all()
     performance = []
     
@@ -148,7 +143,6 @@ async def get_daily_stats(request: Request, db: Session = Depends(get_db), _: bo
     today = date.today()
     start_date = today - timedelta(days=29)
     
-    # SINGLE QUERY with GROUP BY instead of daily loop
     daily_stats = db.query(
         Appointment.appointment_date,
         func.count(Appointment.id).label('total'),
@@ -159,7 +153,6 @@ async def get_daily_stats(request: Request, db: Session = Depends(get_db), _: bo
         Appointment.appointment_date <= today
     ).group_by(Appointment.appointment_date).order_by(Appointment.appointment_date).all()
     
-    # Build lookup
     stats_map = {str(s.appointment_date): s for s in daily_stats}
     
     daily = []
