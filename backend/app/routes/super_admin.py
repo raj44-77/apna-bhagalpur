@@ -10,6 +10,7 @@ from ..models.clinic import Clinic
 from ..models.doctor import Doctor
 from ..models.user import User
 import os
+from ..models.audit_log import AuditLog
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -59,6 +60,38 @@ async def get_overview(request: Request, db: Session = Depends(get_db), _: bool 
         "absent_rate": absent_rate,
         "period": "Last 30 Days"
     }
+
+
+@router.get("/audit-logs")
+@limiter.limit("20/minute")
+async def get_audit_logs(
+    request: Request,
+    clinic_id: int = None,
+    action: str = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_super_admin)
+):
+    query = db.query(AuditLog)
+    
+    if clinic_id:
+        query = query.filter(AuditLog.clinic_id == clinic_id)
+    
+    if action:
+        query = query.filter(AuditLog.action == action)
+    
+    logs = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
+    
+    return [{
+        "id": log.id,
+        "user_id": log.user_id,
+        "clinic_id": log.clinic_id,
+        "action": log.action,
+        "details": log.details,
+        "ip_address": log.ip_address,
+        "created_at": str(log.created_at)
+    } for log in logs]
+
 
 
 @router.get("/clinic-performance")

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs - Apna Bhagalpur</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .log-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .log-table th { background: var(--primary); color: white; padding: 10px 12px; text-align: left; font-size: 0.8rem; }
+        .log-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        .log-table tr:hover { background: var(--secondary); }
+        .action-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .action-success { background: rgba(16,185,129,0.15); color: #059669; }
+        .action-danger { background: rgba(239,68,68,0.15); color: #DC2626; }
+        .action-warning { background: rgba(245,158,11,0.15); color: #D97706; }
+        .action-info { background: rgba(59,130,246,0.15); color: #2563EB; }
+        
+        [data-theme="dark"] .log-table tr:hover { background: #1E293B; }
+        [data-theme="dark"] .log-table td { color: #CBD5E1; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">SUPER ADMIN</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="super-admin.html">👑 Dashboard</a></li>
+                <li><a href="audit-logs.html" class="active">📝 Audit Logs</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero" style="background: linear-gradient(135deg, #4C1D95, #6D28D9);">
+        <div class="page-hero-inner">
+            <h1>📝 Audit Logs</h1>
+            <p>Track every action across all clinics</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <!-- Filters -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-body">
+                    <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+                        <div class="form-group" style="margin:0;min-width:150px;">
+                            <label class="form-label">Filter by Action</label>
+                            <select class="form-control" id="filterAction" onchange="loadLogs()" style="padding:8px 12px;">
+                                <option value="">All Actions</option>
+                                <option value="login_success">Login Success</option>
+                                <option value="login_failed">Login Failed</option>
+                                <option value="next_slot">Next Slot</option>
+                                <option value="mark_absent">Mark Absent</option>
+                                <option value="add_walkin">Add Walk-in</option>
+                                <option value="delete_booking">Delete Booking</option>
+                                <option value="lock_queue">Lock Queue</option>
+                                <option value="unlock_queue">Unlock Queue</option>
+                                <option value="undo">Undo</option>
+                                <option value="password_changed">Password Changed</option>
+                                <option value="password_reset_requested">Password Reset</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="loadLogs()" style="height:38px;">🔄 Refresh</button>
+                        <span style="font-size:0.8rem;color:var(--text-light);" id="logCount"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Table -->
+            <div class="card">
+                <div class="card-body" style="padding:0;overflow-x:auto;">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User ID</th>
+                                <th>Clinic</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody">
+                            <tr><td colspan="6" style="text-align:center;padding:40px;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div></div>
+            <div class="footer-bottom"><p>© 2026 Apna Bhagalpur. All rights reserved.</p></div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const SUPER_ADMIN_KEY = 'apna-bhagalpur-super-admin-2024';
+
+        function getActionBadge(action) {
+            const map = {
+                'login_success': 'action-success',
+                'login_failed': 'action-danger',
+                'next_slot': 'action-info',
+                'mark_absent': 'action-warning',
+                'add_walkin': 'action-info',
+                'delete_booking': 'action-danger',
+                'lock_queue': 'action-warning',
+                'unlock_queue': 'action-info',
+                'undo': 'action-warning',
+                'password_changed': 'action-info',
+                'password_reset_requested': 'action-warning',
+                'google_login': 'action-success'
+            };
+            return map[action] || 'action-info';
+        }
+
+        function formatAction(action) {
+            return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        async function loadLogs() {
+            const action = document.getElementById('filterAction').value;
+            let url = `${API_BASE}/super-admin/audit-logs?limit=200`;
+            if (action) url += `&action=${action}`;
+
+            try {
+                const res = await fetch(url, {
+                    headers: { 'x-api-key': SUPER_ADMIN_KEY }
+                });
+                const logs = await res.json();
+                
+                document.getElementById('logCount').textContent = `${logs.length} entries`;
+                
+                document.getElementById('logTableBody').innerHTML = logs.length === 0 ?
+                    '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-light);">No logs found</td></tr>' :
+                    logs.map(log => `
+                        <tr>
+                            <td style="white-space:nowrap;">${new Date(log.created_at).toLocaleString('en-IN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+                            <td>${log.user_id || '-'}</td>
+                            <td>${log.clinic_id || '-'}</td>
+                            <td><span class="action-badge ${getActionBadge(log.action)}">${formatAction(log.action)}</span></td>
+                            <td>${log.details || '-'}</td>
+                            <td style="font-size:0.75rem;color:var(--text-light);">${log.ip_address || '-'}</td>
+                        </tr>
+                    `).join('');
+            } catch(e) {
+                document.getElementById('logTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--danger);">Failed to load logs</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadLogs);
+    </script>
+</body>
+</html>
