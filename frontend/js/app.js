@@ -326,3 +326,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const linksHTML = '<p style="margin-top:4px;"><a href="about.html" style="color:white;opacity:0.5;font-size:0.75rem;">About</a> | <a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
     footerBottom.insertAdjacentHTML('beforeend', linksHTML);
 });
+
+// ===== AUTO-ADD FAVICON TO ALL PAGES =====
+(function() {
+    if (!document.querySelector("link[rel='icon']")) {
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.type = 'image/png';
+        favicon.href = 'images/main-logo.png';
+        document.head.appendChild(favicon);
+    }
+})();
