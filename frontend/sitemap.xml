@@ -1,27 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/</loc>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/booking.html</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/booking.html</loc>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/tracking.html</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/tracking.html</loc>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/top-clinics.html</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/top-clinics.html</loc>
         <priority>0.7</priority>
     </url>
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/privacy.html</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/about.html</loc>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://apna-bhagalpur-1.onrender.com/privacy.html</loc>
         <priority>0.3</priority>
     </url>
     <url>
-        <loc>https://apna-bhagalpur.onrender.com/terms.html</loc>
+        <loc>https://apna-bhagalpur-1.onrender.com/terms.html</loc>
         <priority>0.3</priority>
     </url>
 </urlset>

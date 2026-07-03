@@ -5,4 +5,4 @@ Disallow: /admin.html
 Disallow: /super-admin.html
 Disallow: /admin-analytics.html
 
-Sitemap: https://apna-bhagalpur.onrender.com/sitemap.xml
+Sitemap: https://apna-bhagalpur-1.onrender.com/sitemap.xml
