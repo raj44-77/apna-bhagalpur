@@ -41,20 +41,20 @@
                 <div class="card-body">
                     <form id="bookingForm">
                         <div class="form-group">
-                            <label class="form-label">Patient Name *</label>
+                            <label class="form-label">रोगी का नाम / Patient Name *</label>
                             <input type="text" class="form-control" id="patientName" placeholder="Enter your full name" required minlength="3">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Phone Number *</label>
+                            <label class="form-label">फ़ोन नंबर / Phone Number *</label>
                             <input type="tel" class="form-control" id="phoneNumber" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10">
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label class="form-label">Age</label>
+                                <label class="form-label">उम्र / Age</label>
                                 <input type="number" class="form-control" id="patientAge" placeholder="Your age" min="1" max="120">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Gender</label>
+                                <label class="form-label">लिंग / Gender</label>
                                 <select class="form-control" id="patientGender">
                                     <option value="">Select...</option>
                                     <option value="male">Male</option>
@@ -64,23 +64,23 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Select Clinic *</label>
+                            <label class="form-label">क्लिनिक चुनें / Select Clinic *</label>
                             <select class="form-control" id="clinicSelect" required>
                                 <option value="">Choose a clinic...</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Select Doctor *</label>
+                            <label class="form-label">डॉक्टर चुनें / Select Doctor *</label>
                             <select class="form-control" id="doctorSelect" required disabled>
                                 <option value="">First select a clinic</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Appointment Date *</label>
+                            <label class="form-label">अपॉइंटमेंट की तारीख/ Appointment Date *</label>
                             <input type="date" class="form-control" id="appointmentDate" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Preferred Time Slot *</label>
+                            <label class="form-label">पसंदीदा समय का स्लॉट / Preferred Time Slot *</label>
                             <select class="form-control" id="timeSlot" required>
                                 <option value="">Select time slot...</option>
                             </select>
