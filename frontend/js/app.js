@@ -318,12 +318,12 @@ document.addEventListener('click', function(e) {
     }, 5000);
 });
 
-// ===== AUTO-ADD PRIVACY & TERMS LINKS TO ALL FOOTERS =====
+// ===== AUTO-ADD FOOTER LINKS TO ALL PAGES =====
 document.addEventListener('DOMContentLoaded', function() {
     const footerBottom = document.querySelector('.footer-bottom');
     if (!footerBottom) return;
     if (footerBottom.innerHTML.includes('privacy.html')) return;
-    const linksHTML = '<p style="margin-top:4px;"><a href="about.html" style="color:white;opacity:0.5;font-size:0.75rem;">About</a> | <a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
+    const linksHTML = '<p style="margin-top:4px;"><a href="health-directory.html" style="color:white;opacity:0.5;font-size:0.75rem;">🏥 Healthcare Directory</a> | <a href="about.html" style="color:white;opacity:0.5;font-size:0.75rem;">About</a> | <a href="privacy.html" style="color:white;opacity:0.5;font-size:0.75rem;">Privacy Policy</a> | <a href="terms.html" style="color:white;opacity:0.5;font-size:0.75rem;">Terms of Service</a></p>';
     footerBottom.insertAdjacentHTML('beforeend', linksHTML);
 });
 
@@ -337,4 +337,3 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(favicon);
     }
 })();
-
