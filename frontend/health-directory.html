@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bhagalpur Healthcare Directory - Hospitals, Pharmacies, Labs | Apna Bhagalpur</title>
+    <meta name="description" content="Complete Bhagalpur healthcare directory - hospitals, pharmacies, medical stores, diagnostic labs, ambulance services, and blood banks. Verified phone numbers and addresses.">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .directory-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+        }
+        .directory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
+        }
+        .rating-stars {
+            color: #F59E0B;
+            font-weight: 600;
+        }
+        .category-tab {
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+        .category-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .category-tab:hover {
+            background: var(--secondary);
+        }
+        .category-tab.active:hover {
+            background: var(--primary-dark);
+        }
+        
+        [data-theme="dark"] .directory-card {
+            background: #0F172A;
+            border-color: #1E293B;
+        }
+        [data-theme="dark"] .category-tab:hover {
+            background: #1E293B;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <img src="images/main-logo.png" alt="Apna Bhagalpur" style="height:45px;width:auto;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:3px;background:white;">
+                <div>
+                    <div class="brand-name">Apna Bhagalpur</div>
+                    <div class="brand-sub">BHAGALPUR KA APNA DOCTOR APP</div>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="booking.html">📅 Book Appointment</a></li>
+                <li><a href="tracking.html">📍 Track Slot</a></li>
+                <li><a href="health-directory.html" class="active">🏥 Directory</a></li>
+                <li><a href="admin.html" class="btn-nav">👨‍⚕️ Admin</a></li>
+            </ul>
+            <button class="hamburger"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <section class="page-hero">
+        <div class="page-hero-inner">
+            <h1>🏥 Bhagalpur Healthcare Directory</h1>
+            <p>Find hospitals, pharmacies, labs, ambulance services & blood banks in Bhagalpur</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <!-- Search & Filters -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-body">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <input type="text" class="form-control" id="directorySearch" placeholder="🔍 Search by name, PIN code, or phone..." oninput="filterDirectory()" style="font-size:1rem;">
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;" id="categoryTabs">
+                        <button class="category-tab active" onclick="switchCategory('all')">📋 All</button>
+                        <button class="category-tab" onclick="switchCategory('hospital')">🏥 Hospitals</button>
+                        <button class="category-tab" onclick="switchCategory('pharmacy')">💊 Pharmacies</button>
+                        <button class="category-tab" onclick="switchCategory('lab')">🔬 Labs</button>
+                        <button class="category-tab" onclick="switchCategory('ambulance')">🚑 Ambulance</button>
+                        <button class="category-tab" onclick="switchCategory('blood')">🩸 Blood Banks</button>
+                    </div>
+                    <div style="margin-top:8px;font-size:0.82rem;color:var(--text-light);" id="resultCount"></div>
+                </div>
+            </div>
+
+            <!-- Directory Listings -->
+            <div class="grid-2" id="directoryList"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><div class="brand-name">🏥 Apna Bhagalpur</div><p>Bhagalpur's trusted healthcare platform</p></div>
+            <div class="footer-bottom">
+                <p>© 2026 Apna Bhagalpur. Made with ❤️ for Bhagalpur</p>
+                <p>Developed by: Kumar Raj</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        const DIRECTORY = [
+            // Hospitals
+            { name: "KK Nursing Home & Research Hospital", category: "hospital", phone: "09939262626", address: "Raja S N Road, Masakchak, Manik Sarkar Chowk, Bhagalpur 812001", rating: 4.8 },
+            { name: "Pulse Hospital", category: "hospital", phone: "09931146526", address: "Barari Rd, in front of DM Residence, Mayaganj, Bhagalpur 812003", rating: 4.4 },
+            { name: "Hallowmeds Hospital", category: "hospital", phone: "06201198143", address: "East of Head Post office, Mount Assisi Junior Section road, Bhagalpur 812001", rating: 4.3 },
+            { name: "Hope Hospital", category: "hospital", phone: "07970696383", address: "Near Hotel Sheeshmahal, Tilka Manjhi, Bhagalpur 812001", rating: 4.7 },
+            { name: "Sri Ram Hospital", category: "hospital", phone: "08678003330", address: "Gurunanakpura Colony, Zero Mile, Bhagalpur 813210", rating: 4.1 },
+            { name: "Life Line Diagnostic Centre Cum Nursing Home", category: "hospital", phone: "", address: "Khalifabagh, Bhagalpur 812002", rating: 3.7 },
+            { name: "Rakshita Nursing Home", category: "hospital", phone: "", address: "M. G. Road, Bhagalpur 812001", rating: 3.7 },
+            // Pharmacies
+            { name: "Aasha Medical Hall", category: "pharmacy", phone: "9470666003", address: "Bhagalpur 812001", rating: null },
+            { name: "Abhishek Medicals", category: "pharmacy", phone: "9431037473", address: "Bhagalpur 812001", rating: null },
+            { name: "Aman Medical Hall", category: "pharmacy", phone: "9431825111", address: "Bhagalpur 812001", rating: null },
+            { name: "Amit Medical Hall", category: "pharmacy", phone: "9955069228", address: "Bhagalpur 812001", rating: null },
+            { name: "Ankit Medical Hall", category: "pharmacy", phone: "9431215188", address: "Bhagalpur 812001", rating: null },
+            { name: "Anuj Pharma", category: "pharmacy", phone: "8986431965", address: "Bhagalpur 812001", rating: null },
+            { name: "Appu Medicals Hall", category: "pharmacy", phone: "9470627200", address: "Bhagalpur 812001", rating: null },
+            { name: "BK Medicals", category: "pharmacy", phone: "9430860228", address: "Bhagalpur 812001", rating: null },
+            { name: "Bablu Medical Hall", category: "pharmacy", phone: "7209686178", address: "Bhagalpur 812001", rating: null },
+            { name: "Bablu Medicals", category: "pharmacy", phone: "9431001787", address: "Bhagalpur 812001", rating: null },
+            { name: "City Diagnostics", category: "pharmacy", phone: "9905984359", address: "Bhagalpur 812001", rating: null },
+            { name: "D R Medicals", category: "pharmacy", phone: "9006095727", address: "Bhagalpur 812001", rating: null },
+            { name: "DEV Medicals", category: "pharmacy", phone: "9934213105", address: "Bhagalpur 812001", rating: null },
+            { name: "DK Medical", category: "pharmacy", phone: "8757204040", address: "Bhagalpur 812001", rating: null },
+            { name: "Ganesh Medical", category: "pharmacy", phone: "9709363318", address: "Bhagalpur 812001", rating: null },
+            { name: "Life Line Medical", category: "pharmacy", phone: "9431214956", address: "Bhagalpur 812002", rating: null },
+            { name: "MAA Medicals", category: "pharmacy", phone: "9199204875", address: "Bhagalpur 812002", rating: null },
+            { name: "Mahabir Medicals", category: "pharmacy", phone: "9304375310", address: "Bhagalpur 812002", rating: null },
+            { name: "Medicine Center", category: "pharmacy", phone: "9934078141", address: "Bhagalpur 812001", rating: null },
+            { name: "Medipulse", category: "pharmacy", phone: "9934777304", address: "Bhagalpur 812001", rating: null },
+            { name: "Modern Medico", category: "pharmacy", phone: "9631065468", address: "Bhagalpur 812001", rating: null },
+            { name: "Popular Medical Shop", category: "pharmacy", phone: "9434054056", address: "Bhagalpur 812001", rating: null },
+            { name: "Rajan Medical Hall", category: "pharmacy", phone: "9304032194", address: "Bhagalpur 812001", rating: null },
+            { name: "SAI Medico", category: "pharmacy", phone: "9473034174", address: "Bhagalpur 812001", rating: null },
+            { name: "Shiv Medical", category: "pharmacy", phone: "0641-2300057", address: "Bhagalpur 812001", rating: null },
+            { name: "Surgico", category: "pharmacy", phone: "9708883515", address: "Bhagalpur 812001", rating: null },
+            { name: "Vijay Medical Hall", category: "pharmacy", phone: "9939442426", address: "Bhagalpur 812001", rating: null },
+            // Labs
+            { name: "City Diagnostics", category: "lab", phone: "9905984359", address: "Bhagalpur 812001", rating: null },
+            { name: "Life Line Diagnostic Centre", category: "lab", phone: "", address: "Khalifabagh, Bhagalpur 812002", rating: 3.7 },
+            // Blood Banks
+            { name: "JLNMC Blood Bank", category: "blood", phone: "0641-2401078", address: "JLN Medical College, Bhagalpur 812001", rating: null },
+            { name: "Red Cross Blood Bank", category: "blood", phone: "", address: "Bhagalpur 812001", rating: null },
+            // Ambulance
+            { name: "JLNMC Ambulance", category: "ambulance", phone: "0641-2401078", address: "JLN Medical College, Bhagalpur 812001", rating: null },
+            { name: "108 Emergency Ambulance", category: "ambulance", phone: "108", address: "Bihar Government Emergency Service", rating: null },
+            { name: "Pulse Hospital Ambulance", category: "ambulance", phone: "09931146526", address: "Barari Rd, Mayaganj, Bhagalpur", rating: null },
+        ];
+
+        let currentCategory = 'all';
+
+        function switchCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            filterDirectory();
+        }
+
+        function filterDirectory() {
+            const search = document.getElementById('directorySearch').value.trim().toLowerCase();
+            let filtered = DIRECTORY;
+            
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(d => d.category === currentCategory);
+            }
+            
+            if (search) {
+                filtered = filtered.filter(d => 
+                    d.name.toLowerCase().includes(search) ||
+                    d.phone.includes(search) ||
+                    d.address.toLowerCase().includes(search)
+                );
+            }
+            
+            document.getElementById('resultCount').textContent = `Showing ${filtered.length} of ${DIRECTORY.length} listings`;
+            
+            const categoryLabels = { hospital: '🏥 Hospital', pharmacy: '💊 Pharmacy', lab: '🔬 Lab', ambulance: '🚑 Ambulance', blood: '🩸 Blood Bank' };
+            
+            document.getElementById('directoryList').innerHTML = filtered.map(d => `
+                <div class="directory-card">
+                    <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;">
+                        <div style="flex:1;">
+                            <h3 style="margin:0 0 4px 0;font-size:1rem;">${d.name}</h3>
+                            <span style="font-size:0.75rem;color:var(--primary);font-weight:600;">${categoryLabels[d.category] || d.category}</span>
+                            ${d.rating ? `<span class="rating-stars" style="margin-left:8px;">⭐ ${d.rating}</span>` : ''}
+                            <p style="margin:8px 0 4px 0;font-size:0.85rem;color:var(--text-light);">📍 ${d.address}</p>
+                            ${d.phone ? `<p style="margin:0;font-size:0.9rem;font-weight:600;">📞 <a href="tel:${d.phone}" style="color:var(--primary);">${d.phone}</a></p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', filterDirectory);
+    </script>
+</body>
+</html>
