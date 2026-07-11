@@ -14,7 +14,7 @@ jobs:
 
       - name: Create backup
         run: |
-          mysqldump --host=${{ secrets.DB_HOST }} --port=${{ secrets.DB_PORT }} --user=${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }} ${{ secrets.DB_NAME }} > backup_$(date +%Y%m%d).sql
+          mysqldump --host=${{ secrets.DB_HOST }} --port=${{ secrets.DB_PORT }} --user=${{ secrets.DB_USER }} --password=${{ secrets.DB_PASSWORD }} --ssl-mode=DISABLED ${{ secrets.DB_NAME }} > backup_$(date +%Y%m%d).sql
       
       - name: Upload backup
         uses: actions/upload-artifact@v4
