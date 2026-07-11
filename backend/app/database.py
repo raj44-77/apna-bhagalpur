@@ -9,7 +9,8 @@ engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
     pool_recycle=3600,
-    echo=settings.debug
+    echo=settings.debug,
+    connect_args={"ssl": {"verify_mode": "VERIFY_IDENTITY", "ca": "tidb-ca.pem"}}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
