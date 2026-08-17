@@ -176,12 +176,8 @@ Doctor appointment platform connecting patients, doctors and clinics.
 
 **Tech:** Python · FastAPI · MySQL · SQLAlchemy · WebSockets
 
-🔗 [Live Demo](https://YOUR-LIVE-WEBSITE.com) · [Source Code](https://github.com/raj44-77/apna-bhagalpur)
+🔗 [Live Demo](https://apna-bhagalpur-1.onrender.com/) · [Source Code](https://github.com/raj44-77/apna-bhagalpur)
 
 ---
 
-### Then push:
-```bash
-git add README.md
-git commit -m "Final README with proper formatting"
-git push
+
